@@ -84,6 +84,34 @@
         </div>
     </footer>
 
+    <!-- Floating İletişim Butonları -->
+    <div class="floating-buttons">
+        <?php if (!empty($settings['contact_phone'])): ?>
+        <a href="tel:<?php echo htmlspecialchars($settings['contact_phone']); ?>" class="floating-button phone-button" title="Bizi Arayın">
+            <i class="fas fa-phone"></i>
+        </a>
+        <?php endif; ?>
+
+        <?php if (!empty($settings['whatsapp_phone'])): ?>
+        <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $settings['whatsapp_phone']); ?>" class="floating-button whatsapp-button" target="_blank" title="WhatsApp ile Yazın">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+        <?php else: ?>
+        <!-- Varsayılan WhatsApp numarası -->
+        <a href="https://wa.me/905551234567" class="floating-button whatsapp-button" target="_blank" title="WhatsApp ile Yazın">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+        <?php endif; ?>
+
+        <a href="<?php echo SITE_URL; ?>/pages/iletisim.php" class="floating-button contact-button" title="İletişim Sayfası">
+            <i class="fas fa-envelope"></i>
+        </a>
+
+        <a href="#" class="floating-button back-to-top" title="Sayfa Başına Dön">
+            <i class="fas fa-arrow-up"></i>
+        </a>
+    </div>
+
     <!-- Custom JS -->
     <script src="<?php echo SITE_URL; ?>/assets/js/main.js"></script>
 </body>

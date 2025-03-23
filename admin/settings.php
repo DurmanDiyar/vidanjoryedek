@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $contactAddress = isset($_POST['contact_address']) ? trim($_POST['contact_address']) : '';
     $colorScheme = isset($_POST['color_scheme']) ? trim($_POST['color_scheme']) : 'blue-green';
     $pageHeaderBg = isset($_POST['page_header_bg']) ? trim($_POST['page_header_bg']) : 'page-header-bg.jpg';
+    $whatsappPhone = isset($_POST['whatsapp_phone']) ? trim($_POST['whatsapp_phone']) : '';
     
     // Sosyal medya URL'leri
     $facebookUrl = isset($_POST['facebook_url']) ? trim($_POST['facebook_url']) : '#';
@@ -130,7 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     twitter_url = ?,
                     instagram_url = ?,
                     linkedin_url = ?,
-                    youtube_url = ?
+                    youtube_url = ?,
+                    whatsapp_phone = ?
                     WHERE id = 1");
                 $result = $stmt->execute([
                     $siteTitle, 
@@ -143,7 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $twitterUrl,
                     $instagramUrl,
                     $linkedinUrl,
-                    $youtubeUrl
+                    $youtubeUrl,
+                    $whatsappPhone
                 ]);
             } else {
                 // Yeni ekleme
@@ -158,8 +161,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     twitter_url,
                     instagram_url,
                     linkedin_url,
-                    youtube_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    youtube_url,
+                    whatsapp_phone
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $result = $stmt->execute([
                     $siteTitle, 
                     $contactPhone, 
@@ -171,7 +175,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $twitterUrl,
                     $instagramUrl,
                     $linkedinUrl,
-                    $youtubeUrl
+                    $youtubeUrl,
+                    $whatsappPhone
                 ]);
             }
             
@@ -280,8 +285,15 @@ include 'includes/header.php';
                         
                         <div class="mb-3">
                             <label for="contact_address" class="form-label">Adres</label>
-                            <textarea class="form-control" id="contact_address" name="contact_address" rows="3"><?php echo isset($settings['contact_address']) ? htmlspecialchars($settings['contact_address']) : ''; ?></textarea>
-                            <div class="form-text">Şirket veya işletmenizin tam adresi.</div>
+                            <textarea class="form-control" id="contact_address" name="contact_address" rows="3"><?php echo htmlspecialchars($settings['contact_address']); ?></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="whatsapp_phone" class="form-label">WhatsApp Telefon Numarası</label>
+                            <input type="text" class="form-control" id="whatsapp_phone" name="whatsapp_phone" 
+                            value="<?php echo isset($settings['whatsapp_phone']) ? htmlspecialchars($settings['whatsapp_phone']) : ''; ?>" 
+                            placeholder="Örn: +905551234567">
+                            <small class="form-text text-muted">WhatsApp butonu için telefon numarası (ülke kodu ile birlikte)</small>
                         </div>
                         
                         <h5 class="mt-4 mb-3">Görünüm Ayarları</h5>

@@ -451,6 +451,104 @@ a:hover {
     color: white;
 }
 
+/* Floating Butonlar */
+.floating-buttons {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.floating-buttons.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.floating-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-decoration: none;
+    position: relative;
+}
+
+.floating-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    color: white;
+}
+
+.floating-button i {
+    font-size: 22px;
+}
+
+.floating-button::before {
+    content: attr(title);
+    position: absolute;
+    right: 60px;
+    padding: 5px 10px;
+    background-color: rgba(0,0,0,0.7);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.floating-button:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Buton Renkleri */
+.phone-button {
+    background-color: #4CAF50;
+}
+
+.whatsapp-button {
+    background-color: #25D366;
+}
+
+.contact-button {
+    background-color: #2196F3;
+}
+
+/* Mobil Cihazlar için Düzenleme */
+@media (max-width: 576px) {
+    .floating-buttons {
+        right: 10px;
+        bottom: 10px;
+        gap: 10px;
+    }
+    
+    .floating-button {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .floating-button i {
+        font-size: 20px;
+    }
+    
+    .floating-button::before {
+        display: none; /* Mobilde tooltip'i gizle */
+    }
+}
+
 /* Navbar Scroll */
 .navbar-scrolled {
     background-color: #fff !important;
