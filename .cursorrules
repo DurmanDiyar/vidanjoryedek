@@ -1,0 +1,654 @@
+# Kurumsal Web Sitesi Proje Analizi ve Yapısı
+
+## Genel Bakış
+
+Bu proje, kurumsal bir web sitesi uygulamasıdır. Dinamik içerik yönetimi sağlayan PHP tabanlı, responsive bir web sitesidir. Bootstrap framework'ü ile tasarlanmış ve veritabanı destekli bir yapıya sahiptir. Slider, hizmetler, hakkımızda ve iletişim gibi temel kurumsal site bölümlerini içermektedir.
+
+## Teknoloji Yığını
+
+- **Backend**: PHP
+- **Veritabanı**: MySQL (PDO kullanılarak)
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Framework'ler**: Bootstrap 5.3.3
+- **Kütüphaneler**: Font Awesome 6.0, jQuery
+- **Responsive Tasarım**: Tüm cihazlara uygun tasarım
+
+## Dosya Yapısı
+
+```
+project/
+│
+├── assets/
+│   ├── css/
+│   │   └── style.css       # Ana stil dosyası
+│   ├── js/
+│   │   ├── menu.js         # Menü işlevleri için JavaScript
+│   │   └── slider.js       # Slider işlevleri için JavaScript
+│   └── img/                # Görsel dosyaları
+│
+├── uploads/                # Kullanıcı yüklenen dosyaların saklandığı klasör
+│
+├── includes/
+│   ├── header.php          # Sayfa başlığı ve navigasyon
+│   └── footer.php          # Sayfa alt bilgisi
+│
+├── pages/
+│   ├── hizmetler.php       # Hizmetler sayfası/bölümü
+│   ├── hizmet-detay.php    # Hizmet detay sayfası
+│   ├── hakkimizda.php      # Hakkımızda sayfası/bölümü
+│   └── ...                 # Diğer sayfalar
+│
+├── admin/                  # Yönetim paneli klasörü
+│   ├── index.php           # Admin girişi ve dashboard
+│   ├── services.php        # Hizmet yönetimi
+│   ├── slider.php          # Slider yönetimi
+│   ├── gallery.php         # Galeri yönetimi
+│   ├── references.php      # Referanslar yönetimi
+│   ├── settings.php        # Site ayarları
+│   ├── messages.php        # İletişim mesajları
+│   ├── users.php           # Kullanıcı yönetimi
+│   └── includes/           # Admin panel için include dosyaları
+│       ├── header.php      # Admin panel başlık/navigasyon
+│       ├── footer.php      # Admin panel alt bilgi
+│       └── auth.php        # Kimlik doğrulama
+│
+├── config.php              # Veritabanı ve site ayarları
+└── index.php               # Ana sayfa
+```
+
+## Veritabanı Yapısı
+
+Proje şu veritabanı tablolarını kullanmaktadır:
+
+### 1. site_settings
+Site başlığı ve iletişim bilgileri gibi genel site ayarlarını saklayan tablo.
+```sql
+CREATE TABLE `site_settings` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `site_title` varchar(255) NOT NULL,
+ `contact_phone` varchar(20) DEFAULT NULL,
+ `contact_email` varchar(100) DEFAULT NULL,
+ `contact_address` varchar(255) DEFAULT NULL,
+ `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+### 2. slider
+Ana sayfadaki slider içeriği için tablo.
+```sql
+CREATE TABLE `slider` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `image_path` varchar(255) NOT NULL,
+ `title` varchar(255) DEFAULT NULL,
+ `description` text,
+ `display_order` int DEFAULT '0',
+ `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+### 3. services
+Şirketin sunduğu hizmetlerin listesi için tablo.
+```sql
+CREATE TABLE `services` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `name` varchar(255) NOT NULL,
+ `description` text,
+ `icon` varchar(100) DEFAULT NULL,
+ `price` decimal(10,2) DEFAULT NULL,
+ `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+### 4. gallery
+Site galerisindeki medya içeriklerini yönetmek için tablo.
+```sql
+CREATE TABLE `gallery` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `title` varchar(255) NOT NULL,
+ `file_path` varchar(255) NOT NULL,
+ `type` enum('image','video') NOT NULL,
+ `category` varchar(50) DEFAULT NULL,
+ `description` text,
+ `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+### 5. referencess
+Şirketin referanslarını ve iş ortaklarını saklayan tablo.
+```sql
+CREATE TABLE `referencess` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `company_name` varchar(255) NOT NULL,
+ `logo_path` varchar(255) DEFAULT NULL,
+ `description` text,
+ `website_url` varchar(255) DEFAULT NULL,
+ `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+### 6. contact_messages
+İletişim formundan gelen mesajları saklayan tablo.
+```sql
+CREATE TABLE `contact_messages` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `name` varchar(100) NOT NULL,
+ `email` varchar(100) NOT NULL,
+ `phone` varchar(20) DEFAULT NULL,
+ `message` text NOT NULL,
+ `is_read` tinyint(1) DEFAULT '0',
+ `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+### 7. users
+Admin paneli kullanıcılarını yöneten tablo.
+```sql
+CREATE TABLE `users` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `username` varchar(50) NOT NULL,
+ `email` varchar(100) NOT NULL,
+ `password` varchar(255) NOT NULL,
+ `role` enum('admin','editor','viewer') DEFAULT 'viewer',
+ `last_login` timestamp NULL DEFAULT NULL,
+ `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `username` (`username`),
+ UNIQUE KEY `email` (`email`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+## Bölümler ve İşlevler
+
+### 1. Header (Üst Kısım)
+
+Header bölümü, şu elementleri içermektedir:
+- **Logo ve Site Başlığı**:
+  - Marka kimliğini yansıtan responsive logo
+  - Dinamik site başlığı (veritabanından çekiliyor)
+  - Hover efekti ile ana sayfaya dönüş bağlantısı
+- **Navigasyon Menüsü (Ana Menü)**:
+  - Bootstrap navbar bileşeni ile oluşturulmuş tam responsive menü
+  - Aktif sayfa belirteci (current-page-highlight)
+  - Açılır alt menüler (dropdown) için destek
+  - Kaydırma sırasında sabitlenen yapışkan menü (sticky navbar)
+- **Mobil Cihazlar için Hamburger Menü**:
+  - 768px altındaki ekranlarda otomatik olarak görünür
+  - Animasyonlu açılma/kapanma efekti
+  - Dokunmatik cihazlara optimize edilmiş hedef alanları
+- **Üst Bilgi Çubuğu (Top Bar)**:
+  - İletişim bilgileri için hızlı erişim alanı
+  - Telefon, e-posta ve adres bilgileri
+  - Sosyal medya bağlantıları
+  - Font Awesome ikonları ile zenginleştirilmiş UI
+  - Küçük ekranlarda otomatik gizlenen/açılan tasarım
+
+Header bölümü, HTML5 semantik `<header>` etiketi içinde yapılandırılmıştır ve CSS Grid/Flexbox kombinasyonu ile responsive tasarıma uygun hale getirilmiştir. JavaScript ile sayfa kaydırma davranışı kontrol edilir ve belli bir eşik değerini geçtikten sonra menü sabitlenir.
+
+### 2. Slider Bölümü
+
+- **Tam Genişlikte, Otomatik Geçişli Dinamik Slider**:
+  - Bootstrap Carousel bileşeni temel alınarak oluşturulmuş
+  - Veritabanından dinamik olarak içerik çekme (slider tablosu)
+  - Responsive görüntü yönetimi (farklı ekran boyutları için)
+  - Otomatik/manuel geçiş seçenekleri (yapılandırılabilir)
+- **Slider İçeriği**:
+  - Yüksek çözünürlüklü arka plan görselleri
+  - H1/H2 başlık katmanları (başlık vurgusu için)
+  - Açıklayıcı metin blokları
+  - Çağrı-Eylem (Call-to-Action) butonları
+  - Özelleştirilmiş konum ve stil seçenekleri
+- **Animasyon ve Geçiş Efektleri**:
+  - Fade/slide/zoom efektleri ile geçiş animasyonları
+  - İçerik elemanlarda aşamalı giriş animasyonları (staggered animations)
+  - CSS3 transitions ile pürüzsüz geçişler
+  - Hardware-accelerated animasyonlar (performans optimizasyonu)
+- **Kontrol Elemanları**:
+  - Özelleştirilmiş yönlendirme okları (sağ-sol)
+  - Sayfa göstergeleri (pagination indicators)
+  - Interaktif dokunmatik kaydırma desteği (swipe)
+  - Otomatik oynatma durdurma/başlatma kontrolü
+- **Teknik Özellikler**:
+  - Lazy loading desteği (performans için)
+  - Görüntü optimizasyonu (farklı ekran boyutları için)
+  - SEO dostu alt etiketleri
+  - ARIA erişilebilirlik standartlarına uyumluluk
+  - Mobil-öncelikli tasarım yaklaşımı
+
+Slider yapısı, JavaScript ile kontrol edilen ve tüm cihazlarda optimal performans sağlayacak şekilde optimize edilmiş Bootstrap Carousel bileşenine dayanmaktadır. Slider içeriği, admin paneli üzerinden kolayca güncellenebilir ve sıralanabilir.
+
+### 3. Hizmetler Bölümü
+
+- **Hizmet Kartları Yapısı**:
+  - Bootstrap Card bileşeni temelli tasarım
+  - Responsive grid sistem (col-lg-4 col-md-6 col-sm-12)
+  - Kart başına eşit yükseklik zorunluluğu (equal height cards)
+  - Gölge (shadow) ve kenar yuvarlatma (border-radius) efektleri
+  - Z-index manipülasyonu ile hover durumunda öne çıkma efekti
+- **Her Hizmet Kartı İçeriği**:
+  - **Görsel/İkon**: 
+    - Font Awesome veya özel SVG ikonları
+    - Renk ve boyut özelleştirme
+    - Animasyonlu hover efektleri
+  - **Hizmet Başlığı**: 
+    - H3 semantik başlık etiketi
+    - Marka renkleri ile vurgulama
+    - Tutarlı yazı tipi ve boyutu
+  - **Kısa Açıklama**: 
+    - Öz ve açıklayıcı metinler
+    - 50-100 karakter optimum uzunluk
+    - Okunabilirlik için line-height optimizasyonu
+  - **"Detaylı Bilgi" Butonu**: 
+    - Bootstrap btn bileşeni
+    - Hover durumunda renk değişimi ve büyüme animasyonu
+    - Font Awesome ok ikonu entegrasyonu
+    - Hizmet detay sayfasına smooth scroll veya yönlendirme
+- **Yerleşim ve Düzen**:
+  - 3x2 veya 3x3 grid düzeni (hizmet sayısına göre)
+  - Desktop: Satır başına 3 kart
+  - Tablet: Satır başına 2 kart
+  - Mobil: Satır başına 1 kart
+  - Gap ve margin ayarlamaları ile optimum boşluk yönetimi
+- **Veritabanı Entegrasyonu**:
+  - `services` tablosundan dinamik veri çekme
+  - Her hizmet için benzersiz ID ile detay sayfası bağlantısı
+  - Admin panelinden yönetilebilir içerik
+- **Görsel Efektler**:
+  - Hover durumunda yükselme (lift-up) animasyonu
+  - Renk geçişleri (background/text color transitions)
+  - İnteraktif buton efektleri
+  - Soft gölgeler ve gradyan arka planlar
+- **Performans Optimizasyonları**:
+  - CSS Grid/Flexbox kullanımı
+  - İkon için SVG tercih edilmesi
+  - İçerik için lazy loading
+
+Hizmetler bölümü, ana sayfada şirketin sunduğu hizmetleri görsel olarak çekici ve kullanıcı dostu bir şekilde sergilemek için tasarlanmıştır. Admin paneli üzerinden kolayca güncellenebilir ve ihtiyaca göre genişletilebilir yapıdadır.
+
+### 4. Hakkımızda Bölümü
+
+- **Genel Yapı ve Tasarım**:
+  - İki kolonlu responsive layout (desktop/tablet)
+  - Mobil görünümde tek kolon (stacked layout)
+  - Parallax arka plan efekti seçeneği
+  - Kurumsal renklerle uyumlu renk şeması
+  - Bölüm ayırıcı (divider) ve başlık vurguları
+- **İçerik Bileşenleri**:
+  - **Görsel Alanı**:
+    - Yüksek kaliteli şirket/ekip fotoğrafları
+    - İmaj galerisi veya tekli hero görsel
+    - Görsel içinde overlay metin seçeneği
+    - Hafif kenar yuvarlatma ve gölge efektleri
+  - **Metin İçeriği**:
+    - H2 ana başlık (kurumsal kimliği yansıtan)
+    - Alt başlıklar (H3) ile bölümlendirilmiş içerik
+    - Paragraflar halinde şirket hikayesi
+    - Vurgu blokları (blockquote) ile önemli mesajlar
+    - Maddeler halinde kurumsal değerler (bullet points)
+  - **İstatistik Sayaçları (Opsiyonel)**:
+    - Deneyim yılı, tamamlanan proje sayısı, müşteri sayısı gibi metrikler
+    - Sayaç animasyonu (counter animation)
+    - İkon+sayı+başlık kombinasyonu
+  - **Çağrı-Eylem Alanı**:
+    - "Bize Ulaşın" veya "Hizmetlerimiz" butonları
+    - Vurgulu tasarım ve hover efektleri
+- **Teknik Özellikler**:
+  - Semantik HTML5 yapısı (`<section>`, `<article>`)
+  - Flexbox/Grid temelli yerleşim
+  - Responsive görüntü boyutlandırma
+  - Okunabilirlik için optimum font boyutu ve line-height
+  - Mobil görünümde içerik önceliklendirme
+- **İnteraktif Elementler**:
+  - Tıklanabilir galeri görselleri
+  - Açılır-kapanır içerik bölümleri (accordion)
+  - Video lightbox entegrasyonu (şirket tanıtım videosu için)
+
+Hakkımızda bölümü, şirketin hikayesini, değerlerini ve vizyonunu ziyaretçilere aktarmak için tasarlanmıştır. Kurumsal kimliği güçlendiren profesyonel görseller ve iyi yapılandırılmış içerik ile şirkete olan güveni artırmayı hedefler.
+
+### 5. Galeri Bölümü
+
+- **Galeri Yapısı ve Organizasyonu**:
+  - Masonry grid layout (düzensiz grid görünümü)
+  - Filtrelenebilir kategoriler (portfölio filtresi)
+  - Lightbox popup görüntüleme
+  - İçerik türüne göre farklı görünüm (resim/video)
+  - Mobil-dostu dokunmatik kaydırma
+- **Medya Türleri ve Özellikleri**:
+  - **Görsel İçerikler**:
+    - Yüksek çözünürlüklü proje/ürün fotoğrafları
+    - Thumbnail ve full-size versiyonlar
+    - Lazy loading ile performans optimizasyonu
+    - WebP formatı desteği (daha hızlı yükleme)
+  - **Video İçerikler**:
+    - YouTube/Vimeo gömme seçenekleri
+    - Otomatik thumbnail oluşturma
+    - Popup player ile izleme deneyimi
+    - Mobil cihazlarda otomatik kalite ayarı
+- **Filtreleme ve Navigasyon**:
+  - İçerik kategorilerine göre filtreleme butonları
+  - Animasyonlu filtre geçişleri
+  - Aktif filtre vurgusu
+  - Tüm/Kategoriye Özel görüntüleme seçenekleri
+- **Lightbox Özellikleri**:
+  - Tam ekran görüntüleme
+  - Slayt gösterisi modu
+  - Dokunmatik kaydırma
+  - Klavye navigasyonu (⟵⟶ tuşları)
+  - Zoom in/out kontrolü
+  - Sosyal medya paylaşım butonları
+- **Veritabanı Entegrasyonu**:
+  - `gallery` tablosundan dinamik içerik çekme
+  - Kategorilere göre filtreleme
+  - Başlık ve açıklama metinleri
+  - Yüklenme tarihi ile sıralama
+- **Görsel Efektler**:
+  - Hover overlay efektleri
+  - Yumuşak geçiş animasyonları
+  - Ölçeklendirme (scale) efektleri
+  - Gradient overlay ile başlık görünürlüğü
+
+Galeri bölümü, şirketin projelerini, ürünlerini veya etkinliklerini görsel olarak sergilemek için tasarlanmış interaktif bir alandır. İçerik filtreleme ve görüntüleme özellikleri ile kullanıcı deneyimini zenginleştirir.
+
+### 6. Referanslar Bölümü
+
+- **Referans Gösterim Yapısı**:
+  - Yatay kaydırmalı carousel düzeni (Swiper/Slick slider)
+  - Logo grid sistemi alternatifi (desktop için)
+  - Mobil için otomatik kaydırmalı tasarım
+  - Minimal beyaz arka plan ve ince çerçeveler
+- **Logo ve Marka Sunumu**:
+  - Standart boyutta logo görüntüleme (120px x 80px)
+  - Gri tonlama (grayscale) ve hover renkli görünüm seçeneği
+  - Logo etrafında beyaz boşluk (padding)
+  - Hafif gölge veya border ile ayrıştırma
+- **İnteraktif Özellikler**:
+  - Logo'ya tıklandığında firma detayları popup'ı
+  - Firma web sitesine yönlendirme seçeneği
+  - Hover durumunda ölçeklendirme veya vurgulama
+  - Sağ/sol kaydırma butonları
+  - Otomatik kaydırma (auto-scroll) özelliği
+- **Referans Detayları**:
+  - Firma adı ve logosu
+  - Kısa açıklama veya testimonial
+  - İşbirliği süresi/türü
+  - İletişim bilgileri (opsiyonel)
+  - Web sitesi bağlantısı
+- **Veritabanı Entegrasyonu**:
+  - `referencess` tablosundan dinamik içerik çekme
+  - Admin panelinden logo yükleme ve bilgi güncelleme
+  - Görünürlük durumu (aktif/pasif)
+  - Sıralama kontrolü
+- **Tasarım Detayları**:
+  - Beyaz arka plan üzerinde temiz logo sunumu
+  - Hafif gölgeler ve kenar yumuşatma
+  - Minimal, şık ve profesyonel görünüm
+  - Kurumsal kimliğe uygun renk şeması
+
+Referanslar bölümü, şirketin güvenilirliğini ve profesyonelliğini vurgulamak için iş ortaklarını ve müşterilerini sergilediği bir vitrin görevi görür. Markaların tanınırlığından faydalanarak ziyaretçilerin güvenini kazanmayı hedefler.
+
+### 7. İletişim Bölümü
+
+- **Ana Bileşenler ve Yerleşim**:
+  - İki kolonlu responsive düzen
+  - Sol: İletişim formu
+  - Sağ: İletişim bilgileri ve harita
+  - Mobil görünümde dikey yerleşim
+- **İletişim Formu Özellikleri**:
+  - HTML5 form validation
+  - Bootstrap form styling
+  - Zorunlu alanlar için belirteçler
+  - Floating label tasarımı
+  - Anti-spam CAPTCHA koruması
+  - Form submission AJAX işlemi
+  - Başarı/hata mesajları feedback'i
+- **Form Alanları**:
+  - İsim-Soyisim (zorunlu)
+  - E-posta (zorunlu, validation kontrollü)
+  - Telefon (opsiyonel, format kontrolü)
+  - Konu başlığı (dropdown seçenek)
+  - Mesaj içeriği (textarea)
+  - Gönder butonu (submit)
+  - KVKK onay checkbox'ı
+- **İletişim Bilgileri Bölümü**:
+  - Şirket adı ve logo
+  - Adres bilgisi (tam adres)
+  - Telefon numarası (tıklanabilir tel: link)
+  - E-posta adresi (tıklanabilir mailto: link)
+  - Çalışma saatleri
+  - Sosyal medya bağlantıları
+  - Font Awesome ikonları ile zenginleştirilmiş görünüm
+- **Harita Entegrasyonu**:
+  - Google Maps API veya OpenStreetMap embed
+  - Özel marker ile konum gösterimi
+  - Interaktif zoom ve kaydırma
+  - Mobil cihazlar için optimizasyon
+  - Haritada yol tarifi alma seçeneği
+- **Veritabanı İşlemleri**:
+  - Form verileri `contact_messages` tablosuna kaydedilir
+  - Admin panelinden mesajları görüntüleme ve yanıtlama
+  - Okundu/okunmadı işaretleme
+  - Mesaj arşivleme özelliği
+- **Güvenlik Önlemleri**:
+  - Form input sanitization
+  - CSRF token koruması
+  - Rate limiting (spam koruması)
+  - E-posta doğrulama
+  - Güvenli veritabanı işlemleri (prepared statements)
+
+İletişim bölümü, ziyaretçilerin şirketle kolayca iletişime geçmesini sağlayan interaktif bir alandır. Kullanıcı dostu form tasarımı, harita entegrasyonu ve açık iletişim bilgileri ile ziyaretçilerin sorularını iletmelerini veya hizmet talep etmelerini kolaylaştırır.
+
+### 8. Footer (Alt Kısım)
+
+- **Footer Yapısı ve Bölümleri**:
+  - Çok kolonlu responsive grid düzeni
+  - Üst footer (ana içerik) ve alt footer (telif hakkı) ayrımı
+  - Bootstrap container ve row sistemi ile yapılandırma
+  - Mobil görünümde accordion (katlanabilir) seçeneği
+- **Kolon İçerikleri**:
+  - **1. Kolon: Şirket Bilgileri**
+    - Logo ve kısa açıklama
+    - Kurumsal bilgi özeti
+    - Sosyal medya bağlantıları
+    - İletişim bilgileri özeti
+  - **2. Kolon: Hızlı Erişim Linkleri**
+    - Ana menü sayfalarına linkler
+    - Sık ziyaret edilen sayfalara kısayollar
+    - Hizmet kategorileri
+    - Önemli belgeler (KVKK, Gizlilik Politikası)
+  - **3. Kolon: Son Haberler/Blog**
+    - En son blog yazıları veya haberler
+    - Tarih ve başlık formatında
+    - Tıklanabilir ilgili içeriğe yönlendirme
+  - **4. Kolon: İletişim Bilgileri**
+    - Adres (tam açık adres)
+    - Telefon numaraları (sabit ve GSM)
+    - E-posta adresi
+    - Çalışma saatleri
+    - Mini iletişim formu (opsiyonel)
+- **Alt Footer (Bottom Bar)**:
+  - Telif hakkı bilgisi ve yıl
+  - Tasarımcı/geliştirici kredisi
+  - Gizlilik Politikası ve Kullanım Şartları linkleri
+  - Ödeme yöntemi logoları (e-ticaret siteleri için)
+- **Görsel Tasarım Özellikleri**:
+  - Koyu arka plan rengi (genellikle kurumsal rengin koyu tonu)
+  - Açık renk yazılar için kontrast
+  - Belirgin başlıklar ve ince metin stili
+  - Link hover efektleri
+  - İkon entegrasyonu (Font Awesome)
+  - Responsive görünüm ve yerleşim
+- **Teknik Özellikler**:
+  - HTML5 semantik yapı (`<footer>` etiketi)
+  - Flexbox/CSS Grid ile kolonlar
+  - Medya sorguları ile responsive davranış
+  - Sayfa içi linklere smooth scroll
+  - Erişilebilirlik (ARIA) özellikleri
+
+Footer bölümü, site ziyaretçileri için önemli bilgilere hızlı erişim sağlayan ve sitenin kurumsal kimliğini pekiştiren bir alan olarak işlev görür. Site haritası niteliğinde olup, ziyaretçilerin aradıkları bilgilere kolayca ulaşmasını sağlar.
+
+### 9. Floating Butonlar
+
+- **Genel Yapı ve Yerleşim**:
+  - Sayfanın sağ alt köşesinde konumlandırma
+  - Sabit (fixed) pozisyonlama
+  - Dikey veya yatay düzen seçeneği
+  - Z-index ile diğer elementlerin üzerinde görünüm
+  - Mobil öncelikli tasarım (dokunma hedefi büyüklüğü)
+- **Buton Türleri ve Özellikleri**:
+  - **WhatsApp İletişim Butonu**:
+    - WhatsApp kurumsal API entegrasyonu
+    - Ön tanımlı mesaj metni
+    - WhatsApp marka rengi (#25D366)
+    - Anlık mesajlaşma başlatma
+  - **Telefon Butonu**:
+    - Click-to-call özelliği (tel: protokolü)
+    - Mobil cihazlarda doğrudan arama başlatma
+    - Telefon ikonu ve kurumsal renk
+  - **Konum Butonu**:
+    - Google Maps yönlendirmesi
+    - Şirket konumuna yol tarifi
+    - Harita ikonu ve vurgulu tasarım
+  - **Sayfa Başına Dön Butonu**:
+    - Smooth scroll ile sayfa başına dönüş
+    - Belirli bir scroll mesafesinden sonra görünürlük
+    - Ok ikonu ve animasyon efekti
+- **Görsel ve İnteraktif Özellikler**:
+  - Dairesel buton tasarımı (50-60px çap)
+  - Gölge efekti (box-shadow)
+  - Hover durumunda büyüme/renk değişimi
+  - Tıklama animasyonu (ripple effect)
+  - Tooltip bilgi baloncukları
+  - Font Awesome veya özel SVG ikonları
+- **Responsive Davranış**:
+  - Mobil cihazlarda daha belirgin büyüklük
+  - Desktop görünümünde daha minimal tasarım
+  - Tablet boyutunda optimal yerleşim
+  - Küçük ekranlarda tek satır düzeni
+- **Performans ve Erişilebilirlik**:
+  - Hafif CSS ve minimal JavaScript
+  - SVG ikon kullanımı (performans için)
+  - ARIA etiketleri ile erişilebilirlik
+  - Klavye navigasyonu desteği
+  - Yüksek kontrast renk şeması
+
+Floating butonlar, ziyaretçilerin site içinde herhangi bir noktadayken kolayca iletişime geçmelerini veya navigasyon yapmalarını sağlayan pratik UI elementleridir. Özellikle mobil kullanımda hızlı erişim sağlarlar ve dönüşüm oranlarını (conversion rate) artırmaya yardımcı olurlar.
+
+## Admin Paneli
+
+Admin paneli, site içeriğinin dinamik olarak yönetilmesini sağlayan güvenli bir arayüzdür.
+
+### 1. Giriş ve Kimlik Doğrulama
+- Kullanıcı adı ve şifre ile güvenli giriş
+- Oturum yönetimi
+- Rol tabanlı yetkilendirme (admin, editor, viewer)
+
+### 2. Dashboard
+- Genel istatistikler ve özet bilgiler
+- Yeni mesajlar, son eklemeler
+- Hızlı erişim linkleri
+
+### 3. Slider Yönetimi
+- Slider resimleri ekleme/düzenleme/silme
+- Başlık ve açıklama metinlerini yönetme
+- Sıralama seçenekleri
+
+### 4. Hizmet Yönetimi
+- Hizmet ekleme/düzenleme/silme
+- İkon veya görsel atama
+- Hizmet açıklamaları düzenleme
+
+### 5. Galeri Yönetimi
+- Görsel ve video içerik yükleme
+- Kategorilendirme
+- Başlık ve açıklama ekleme
+
+### 6. Referans Yönetimi
+- Referans firma/marka ekleme/düzenleme/silme
+- Logo yükleme
+- İletişim bilgileri ve açıklama ekleme
+
+### 7. İletişim Mesajları
+- Gelen mesajları listeleme
+- Okundu/okunmadı işaretleme
+- Mesaj yönetimi
+
+### 8. Kullanıcı Yönetimi
+- Kullanıcı ekleme/düzenleme/silme
+- Rol ve yetki atama
+- Şifre sıfırlama
+
+### 9. Site Ayarları
+- Site başlığı güncelleme
+- İletişim bilgilerini düzenleme
+- SEO ayarları
+
+## Özel Özellikler
+
+### Responsive Tasarım
+
+- Mobil öncelikli tasarım yaklaşımı
+- Farklı ekran boyutlarına uyum için medya sorguları
+- Mobil cihazlarda optimize edilmiş menü ve içerik
+
+### Dinamik İçerik Yönetimi
+
+- Tüm içerikler veritabanından çekilmekte
+- Admin paneli üzerinden güncellenebilir yapı
+- Slider ve hizmetler dinamik olarak değiştirilebilir
+
+### Performans Optimizasyonları
+
+- CSS ve JavaScript dosyalarında optimizasyonlar
+- Görsel sıkıştırma ve boyut optimizasyonu
+- Hızlı yükleme için yapılandırılmış HTML yapısı
+
+### Animasyon ve Kullanıcı Deneyimi
+
+- Hover efektleri
+- Geçiş animasyonları
+- Kullanıcı dostu navigasyon
+- Slider için dokunmatik ekran desteği
+
+### Güvenlik Özellikleri
+- Password hashing
+- PDO prepared statements ile SQL injection koruması
+- XSS koruması
+- CSRF token koruması
+- Oturum güvenliği
+
+## Proje Amaçları
+
+1. **Kurumsal Kimlik Yansıtma**: Şirketin profesyonel imajını güçlendirmek
+2. **Hizmet Tanıtımı**: Sunulan hizmetleri etkili bir şekilde tanıtmak
+3. **İletişim Kolaylığı**: Ziyaretçilerin hızlıca iletişime geçebilmesi
+4. **Mobil Erişilebilirlik**: Tüm cihazlardan erişilebilir olmak
+5. **SEO Uyumluluğu**: Arama motorlarında iyi sıralama elde etmek
+6. **İçerik Yönetimi**: Site içeriğinin kolayca güncellenebilmesi
+
+## Geliştirme Kuralları
+
+1. **HTML Yapısı**: Semantik HTML kullanımına dikkat edilmeli
+2. **CSS Organizasyonu**: CSS dosyaları bölümlere ayrılmış ve düzenli tutulmalı
+3. **JavaScript**: Modüler yapıda, her işlev için ayrı dosyalar kullanılmalı
+4. **Responsive Tasarım**: Mobil öncelikli yaklaşım korunmalı
+5. **Veritabanı İşlemleri**: Güvenli sorgu pratikleri kullanılmalı (PDO, prepared statements)
+6. **Güvenlik**: XSS ve SQL enjeksiyon korumaları uygulanmalı
+7. **Admin İşlemleri**: Tüm admin işlemlerinde yetki kontrolü yapılmalı
+
+## Not
+
+Bu web sitesi, temelde bir kurumsal hizmet şirketinin online varlığını sağlamak, hizmetlerini tanıtmak ve potansiyel müşterilerle iletişim kurmak üzere tasarlanmıştır. Altyapı, tesisat, inşaat veya teknik hizmetler sektöründe faaliyet gösteren bir şirkete ait olduğu tahmin edilmektedir.
+
+## Geliştirici Notları
+
+- Bootstrap framework'ü CSS override'lar ile özelleştirilmiştir
+- Font Awesome ikonları UI elementleri için kullanılmaktadır
+- Slider ve hizmetler bölümleri arasındaki boşluk özel CSS çözümleriyle giderilmiştir
+- Tüm içerikler veritabanından dinamik olarak çekildiği için CMS mantığında çalışmaktadır
+- Admin paneli CRUD (Create, Read, Update, Delete) işlemleri için genel bir şablon kullanmaktadır
+- Veritabanı işlemleri PDO üzerinden prepared statements kullanılarak yapılmaktadır 
