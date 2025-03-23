@@ -34,6 +34,9 @@ $messageType = '';
 
 // Form gönderildiğinde
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Debugging
+    error_log("Form gönderildi: " . print_r($_POST, true));
+    
     // Form verilerini al
     $siteTitle = isset($_POST['site_title']) ? trim($_POST['site_title']) : '';
     $contactPhone = isset($_POST['contact_phone']) ? trim($_POST['contact_phone']) : '';
@@ -42,6 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $colorScheme = isset($_POST['color_scheme']) ? trim($_POST['color_scheme']) : 'blue-green';
     $pageHeaderBg = isset($_POST['page_header_bg']) ? trim($_POST['page_header_bg']) : 'page-header-bg.jpg';
     $whatsappPhone = isset($_POST['whatsapp_phone']) ? trim($_POST['whatsapp_phone']) : '';
+    
+    // Renk şeması onaylama (color_scheme_confirmed varsa onu kullan)
+    if (isset($_POST['color_scheme_confirmed']) && !empty($_POST['color_scheme_confirmed'])) {
+        $colorScheme = trim($_POST['color_scheme_confirmed']);
+        error_log("Form onaylanmış renk şeması: " . $colorScheme);
+    }
     
     // Sosyal medya URL'leri
     $facebookUrl = isset($_POST['facebook_url']) ? trim($_POST['facebook_url']) : '#';
@@ -94,7 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'twitter_url' => "ALTER TABLE site_settings ADD COLUMN twitter_url VARCHAR(255) DEFAULT '#'",
                 'instagram_url' => "ALTER TABLE site_settings ADD COLUMN instagram_url VARCHAR(255) DEFAULT '#'",
                 'linkedin_url' => "ALTER TABLE site_settings ADD COLUMN linkedin_url VARCHAR(255) DEFAULT '#'",
-                'youtube_url' => "ALTER TABLE site_settings ADD COLUMN youtube_url VARCHAR(255) DEFAULT '#'"
+                'youtube_url' => "ALTER TABLE site_settings ADD COLUMN youtube_url VARCHAR(255) DEFAULT '#'",
+                'whatsapp_phone' => "ALTER TABLE site_settings ADD COLUMN whatsapp_phone VARCHAR(20) DEFAULT ''"
             ];
             
             foreach ($requiredColumns as $column => $alterQuery) {
@@ -218,6 +228,9 @@ try {
     if (!isset($settings['youtube_url'])) {
         $settings['youtube_url'] = '#';
     }
+    if (!isset($settings['whatsapp_phone'])) {
+        $settings['whatsapp_phone'] = '';
+    }
 } catch (PDOException $e) {
     $settings = [
         'site_title' => '',
@@ -230,7 +243,8 @@ try {
         'twitter_url' => '#',
         'instagram_url' => '#',
         'linkedin_url' => '#',
-        'youtube_url' => '#'
+        'youtube_url' => '#',
+        'whatsapp_phone' => ''
     ];
     $message = 'Veritabanı hatası: ' . $e->getMessage();
     $messageType = 'danger';
@@ -241,19 +255,42 @@ $pageTitle = 'Site Ayarları';
 
 // Header'ı dahil et
 include 'includes/header.php';
+
+// Başarı mesajı göster
+if (isset($_SESSION['success_message'])) {
+    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-1"></i> ' . $_SESSION['success_message'] . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
+    // Mesajı gösterdikten sonra session'dan temizle
+    unset($_SESSION['success_message']);
+} else if (isset($_SESSION['error_message'])) {
+    echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-1"></i> ' . $_SESSION['error_message'] . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
+    // Mesajı gösterdikten sonra session'dan temizle
+    unset($_SESSION['error_message']);
+} else if (isset($_GET['updated']) && $_GET['updated'] == 1) {
+    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-1"></i> Site ayarları başarıyla güncellendi!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
+}
+
+// Eğer form içerisinde hata veya başarı mesajı varsa göster
+if (!empty($message)) {
+    echo '<div class="alert alert-' . $messageType . ' alert-dismissible fade show" role="alert">
+            ' . $message . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
+}
 ?>
 
 <div class="container-fluid py-4">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Site Ayarları</h1>
     </div>
-    
-    <?php if (!empty($message)): ?>
-        <div class="alert alert-<?php echo $messageType; ?> alert-dismissible fade show" role="alert">
-            <?php echo $message; ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    <?php endif; ?>
     
     <div class="row">
         <div class="col-lg-8">
@@ -262,7 +299,10 @@ include 'includes/header.php';
                     <h6 class="m-0 font-weight-bold text-white">Genel Ayarlar</h6>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="process_settings.php">
+                    <form id="settingsForm" action="settings.php" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="form_submit" value="1">
+                        <input type="hidden" name="settings_timestamp" value="<?php echo time(); ?>">
+                        <h5 class="mb-4">Temel Bilgiler</h5>
                         <div class="mb-3">
                             <label for="site_title" class="form-label">Site Başlığı</label>
                             <input type="text" class="form-control" id="site_title" name="site_title" value="<?php echo isset($settings['site_title']) ? htmlspecialchars($settings['site_title']) : ''; ?>" required>
@@ -286,6 +326,7 @@ include 'includes/header.php';
                         <div class="mb-3">
                             <label for="contact_address" class="form-label">Adres</label>
                             <textarea class="form-control" id="contact_address" name="contact_address" rows="3"><?php echo htmlspecialchars($settings['contact_address']); ?></textarea>
+                            <div class="form-text">Şirket veya işletmenizin tam adresi.</div>
                         </div>
                         
                         <div class="mb-3">
@@ -293,7 +334,7 @@ include 'includes/header.php';
                             <input type="text" class="form-control" id="whatsapp_phone" name="whatsapp_phone" 
                             value="<?php echo isset($settings['whatsapp_phone']) ? htmlspecialchars($settings['whatsapp_phone']) : ''; ?>" 
                             placeholder="Örn: +905551234567">
-                            <small class="form-text text-muted">WhatsApp butonu için telefon numarası (ülke kodu ile birlikte)</small>
+                            <div class="form-text">WhatsApp butonu için telefon numarası (ülke kodu ile birlikte). Örn: +905551234567</div>
                         </div>
                         
                         <h5 class="mt-4 mb-3">Görünüm Ayarları</h5>
@@ -307,10 +348,27 @@ include 'includes/header.php';
                                         <option value="purple-pink" <?php echo ($settings['color_scheme'] == 'purple-pink') ? 'selected' : ''; ?>>Mor-Pembe</option>
                                         <option value="red-orange" <?php echo ($settings['color_scheme'] == 'red-orange') ? 'selected' : ''; ?>>Kırmızı-Turuncu</option>
                                         <option value="dark-blue" <?php echo ($settings['color_scheme'] == 'dark-blue') ? 'selected' : ''; ?>>Koyu Mavi</option>
+                                        <option value="green-teal" <?php echo ($settings['color_scheme'] == 'green-teal') ? 'selected' : ''; ?>>Yeşil-Turkuaz</option>
                                         <option value="green-brown" <?php echo ($settings['color_scheme'] == 'green-brown') ? 'selected' : ''; ?>>Yeşil-Kahverengi</option>
                                     </select>
-                                    <div id="colorPreview" class="mt-2 p-3 rounded text-white" style="background-color: <?php echo getColorPreviewBackground($settings['color_scheme']); ?>">
-                                        Renk önizleme
+                                    <div class="form-text">Sitenin genel renk temasını belirler. Tüm site elementleri bu temadan etkilenir.</div>
+                                    
+                                    <!-- Renk Şeması Önizleme -->
+                                    <div class="mt-3">
+                                        <label class="form-label">Renk Önizleme:</label>
+                                        <div class="d-flex gap-2 mb-2">
+                                            <div id="primaryColor" class="color-box rounded" style="width:40px;height:40px;background-color:var(--primary-color)" title="Ana Renk"></div>
+                                            <div id="secondaryColor" class="color-box rounded" style="width:40px;height:40px;background-color:var(--secondary-color)" title="İkincil Renk"></div>
+                                            <div id="accentColor" class="color-box rounded" style="width:40px;height:40px;background-color:var(--accent-color)" title="Vurgu Rengi"></div>
+                                        </div>
+                                        
+                                        <!-- UI Öğeleri Önizleme -->
+                                        <div class="border p-3 rounded bg-light mt-2">
+                                            <h5 class="preview-title" style="color:var(--primary-color)">Önizleme Başlığı</h5>
+                                            <p class="small">Bu önizleme, seçtiğiniz renk şemasının site genelinde nasıl görüneceğini gösterir.</p>
+                                            <button class="btn btn-sm btn-primary me-2">Ana Buton</button>
+                                            <button class="btn btn-sm btn-secondary">İkincil Buton</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -337,13 +395,13 @@ include 'includes/header.php';
                             <div class="col-md-6">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text"><i class="fab fa-facebook-f"></i></span>
-                                    <input type="url" class="form-control social-media-input" id="facebook_url" name="facebook_url" placeholder="Facebook URL" value="<?php echo isset($settings['facebook_url']) ? htmlspecialchars($settings['facebook_url']) : '#'; ?>" data-platform="facebook">
+                                    <input type="url" class="form-control social-media-input" id="facebook_url" name="facebook_url" placeholder="Facebook URL (Opsiyonel)" value="<?php echo isset($settings['facebook_url']) && $settings['facebook_url'] !== '#' ? htmlspecialchars($settings['facebook_url']) : ''; ?>" data-platform="facebook">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text"><i class="fab fa-twitter"></i></span>
-                                    <input type="url" class="form-control social-media-input" id="twitter_url" name="twitter_url" placeholder="Twitter URL" value="<?php echo isset($settings['twitter_url']) ? htmlspecialchars($settings['twitter_url']) : '#'; ?>" data-platform="twitter">
+                                    <input type="url" class="form-control social-media-input" id="twitter_url" name="twitter_url" placeholder="Twitter URL (Opsiyonel)" value="<?php echo isset($settings['twitter_url']) && $settings['twitter_url'] !== '#' ? htmlspecialchars($settings['twitter_url']) : ''; ?>" data-platform="twitter">
                                 </div>
                             </div>
                         </div>
@@ -352,13 +410,13 @@ include 'includes/header.php';
                             <div class="col-md-6">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text"><i class="fab fa-instagram"></i></span>
-                                    <input type="url" class="form-control social-media-input" id="instagram_url" name="instagram_url" placeholder="Instagram URL" value="<?php echo isset($settings['instagram_url']) ? htmlspecialchars($settings['instagram_url']) : '#'; ?>" data-platform="instagram">
+                                    <input type="url" class="form-control social-media-input" id="instagram_url" name="instagram_url" placeholder="Instagram URL (Opsiyonel)" value="<?php echo isset($settings['instagram_url']) && $settings['instagram_url'] !== '#' ? htmlspecialchars($settings['instagram_url']) : ''; ?>" data-platform="instagram">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text"><i class="fab fa-linkedin-in"></i></span>
-                                    <input type="url" class="form-control social-media-input" id="linkedin_url" name="linkedin_url" placeholder="LinkedIn URL" value="<?php echo isset($settings['linkedin_url']) ? htmlspecialchars($settings['linkedin_url']) : '#'; ?>" data-platform="linkedin">
+                                    <input type="url" class="form-control social-media-input" id="linkedin_url" name="linkedin_url" placeholder="LinkedIn URL (Opsiyonel)" value="<?php echo isset($settings['linkedin_url']) && $settings['linkedin_url'] !== '#' ? htmlspecialchars($settings['linkedin_url']) : ''; ?>" data-platform="linkedin">
                                 </div>
                             </div>
                         </div>
@@ -367,7 +425,7 @@ include 'includes/header.php';
                             <div class="col-md-6">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text"><i class="fab fa-youtube"></i></span>
-                                    <input type="url" class="form-control social-media-input" id="youtube_url" name="youtube_url" placeholder="YouTube URL" value="<?php echo isset($settings['youtube_url']) ? htmlspecialchars($settings['youtube_url']) : '#'; ?>" data-platform="youtube">
+                                    <input type="url" class="form-control social-media-input" id="youtube_url" name="youtube_url" placeholder="YouTube URL (Opsiyonel)" value="<?php echo isset($settings['youtube_url']) && $settings['youtube_url'] !== '#' ? htmlspecialchars($settings['youtube_url']) : ''; ?>" data-platform="youtube">
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex align-items-center">
@@ -381,14 +439,18 @@ include 'includes/header.php';
                             <small>
                                 <i class="fas fa-info-circle me-2"></i>
                                 Sosyal medya bağlantılarının çalışması için tam URL'leri girin (örn: https://facebook.com/yourpage). 
-                                Kullanılmayan platformlar için # karakteri girin veya boş bırakın. Boş bırakılan veya # olan bağlantılar sitede gösterilmeyecektir.
+                                Kullanılmayan platformlar için alanları boş bırakabilirsiniz. Boş bırakılan alanlar sitede gösterilmeyecektir.
                             </small>
                         </div>
                         
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Ayarları Kaydet
+                        <!-- Submit Button -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary" id="saveSettingsBtn">
+                                <i class="fas fa-save me-1"></i> Ayarları Kaydet
                             </button>
+                            <div class="spinner-border text-primary d-none" id="settingsSaveSpinner" role="status">
+                                <span class="visually-hidden">Kaydediliyor...</span>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -512,173 +574,100 @@ function getColorPreviewBackground($colorScheme) {
 ?>
 
 <script>
-// Renk şeması seçimi değiştiğinde önizleme rengini güncelle
 document.addEventListener('DOMContentLoaded', function() {
+    // Renk şeması değişimini izle
     const colorSchemeSelect = document.getElementById('color_scheme');
-    const colorPreview = document.getElementById('colorPreview');
-    const headerBgSelect = document.getElementById('page_header_bg');
-    const headerBgPreview = document.getElementById('headerBgPreview');
+    const saveButton = document.getElementById('saveSettingsBtn');
+    const saveSpinner = document.getElementById('settingsSaveSpinner');
+    
+    // Renk şemasını değiştirme fonksiyonu
+    function changeColorScheme(scheme) {
+        // AJAX isteği ile renk şeması önizlemesini yükle
+        fetch('update_preview_css.php?scheme=' + scheme + '&t=' + Date.now())
+            .then(response => response.text())
+            .then(css => {
+                // Eski stil elementini kaldır (eğer varsa)
+                const oldStyle = document.getElementById('preview-style');
+                if (oldStyle) oldStyle.remove();
+                
+                // Yeni stil elementi oluştur
+                const styleEl = document.createElement('style');
+                styleEl.id = 'preview-style';
+                styleEl.textContent = css;
+                document.head.appendChild(styleEl);
+                
+                // Renk önizleme kutularını güncelle
+                updateColorBoxes();
+                
+                // Önizleme başlık ve butonlarını güncelle
+                updatePreviewElements();
+                
+                console.log('Renk şeması önizlemesi güncellendi: ' + scheme);
+            })
+            .catch(error => console.error('Renk şeması önizleme hatası:', error));
+    }
+    
+    // Renkli kutuları güncelleme
+    function updateColorBoxes() {
+        const computedStyle = getComputedStyle(document.documentElement);
+        
+        // Renk kutularını güncelle
+        document.getElementById('primaryColor').style.backgroundColor = computedStyle.getPropertyValue('--primary-color');
+        document.getElementById('secondaryColor').style.backgroundColor = computedStyle.getPropertyValue('--secondary-color');
+        document.getElementById('accentColor').style.backgroundColor = computedStyle.getPropertyValue('--accent-color');
+    }
+    
+    // Önizleme elementlerini güncelleme
+    function updatePreviewElements() {
+        const computedStyle = getComputedStyle(document.documentElement);
+        const primaryColor = computedStyle.getPropertyValue('--primary-color');
+        
+        // Başlık rengini güncelle
+        document.querySelector('.preview-title').style.color = primaryColor;
+        
+        // Butonları güncelle (Bootstrap'in !important kurallarını geçersiz kılmak için inline style kullanıyoruz)
+        const primaryBtn = document.querySelector('.btn-primary');
+        primaryBtn.style.backgroundColor = primaryColor;
+        primaryBtn.style.borderColor = primaryColor;
+    }
     
     // Renk şeması değiştiğinde
     colorSchemeSelect.addEventListener('change', function() {
-        let backgroundColor = '#1a5f7a'; // Varsayılan
-        
-        switch(this.value) {
-            case 'purple-pink':
-                backgroundColor = '#6a1b9a';
-                break;
-            case 'red-orange':
-                backgroundColor = '#b71c1c';
-                break;
-            case 'dark-blue':
-                backgroundColor = '#1a237e';
-                break;
-            case 'green-brown':
-                backgroundColor = '#2e7d32';
-                break;
-        }
-        
-        colorPreview.style.backgroundColor = backgroundColor;
-        
-        // Canlı önizleme için CSS değişkenlerini güncelle
-        updateRootVariables(this.value);
+        changeColorScheme(this.value);
     });
     
-    // Arkaplan değiştiğinde
-    headerBgSelect.addEventListener('change', function() {
-        headerBgPreview.src = '<?php echo SITE_URL; ?>/assets/img/' + this.value;
-    });
-
-    // Sosyal medya önizleme fonksiyonları
-    const socialMediaInputs = document.querySelectorAll('.social-media-input');
-    const socialMediaPreview = document.getElementById('socialMediaPreview');
+    // Sayfa yüklendiğinde önizlemeyi başlat
+    updateColorBoxes();
     
-    // Sosyal medya önizlemesini oluştur
-    function updateSocialMediaPreview() {
-        socialMediaPreview.innerHTML = '';
+    // Form gönderildiğinde
+    document.getElementById('settingsForm').addEventListener('submit', function(e) {
+        // Yükleniyor göstergesini göster
+        saveButton.classList.add('d-none');
+        saveSpinner.classList.remove('d-none');
         
-        // Her sosyal medya giriş alanı için
-        socialMediaInputs.forEach(input => {
-            const url = input.value.trim();
-            const platform = input.dataset.platform;
-            
-            // URL # değilse ve boş değilse
-            if (url && url !== '#') {
-                const iconClass = `fa-${platform === 'linkedin' ? 'linkedin-in' : platform}`;
-                const iconColor = getIconColor(platform);
-                
-                // Önizleme ikonu oluştur
-                const previewIcon = document.createElement('a');
-                previewIcon.setAttribute('href', '#');
-                previewIcon.setAttribute('class', 'me-2');
-                previewIcon.innerHTML = `<i class="fab ${iconClass}" style="font-size: 1.5rem; color: ${iconColor};"></i>`;
-                
-                socialMediaPreview.appendChild(previewIcon);
-            }
-        });
+        // Seçilen renk şemasını hidden input olarak ekle
+        const colorSchemeValue = colorSchemeSelect.value;
         
-        // Hiç ikon yoksa mesaj göster
-        if (socialMediaPreview.children.length === 0) {
-            socialMediaPreview.innerHTML = '<small class="text-muted">Aktif sosyal medya bağlantısı yok</small>';
+        // Hidden input varsa güncelle, yoksa oluştur
+        let hiddenInput = document.getElementById('color_scheme_confirmed');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'color_scheme_confirmed';
+            hiddenInput.id = 'color_scheme_confirmed';
+            this.appendChild(hiddenInput);
         }
-    }
-    
-    // Platform için renk döndürür
-    function getIconColor(platform) {
-        switch (platform) {
-            case 'facebook':
-                return '#1877f2';
-            case 'twitter':
-                return '#1da1f2';
-            case 'instagram':
-                return '#e4405f';
-            case 'linkedin':
-                return '#0077b5';
-            case 'youtube':
-                return '#ff0000';
-            default:
-                return '#666666';
-        }
-    }
-    
-    // CSS root değişkenlerini güncelleme fonksiyonu
-    function updateRootVariables(colorScheme) {
-        let primaryColor, secondaryColor, accentColor;
+        hiddenInput.value = colorSchemeValue;
         
-        switch(colorScheme) {
-            case 'purple-pink':
-                primaryColor = '#6a1b9a';
-                secondaryColor = '#9c27b0';
-                accentColor = '#e91e63';
-                break;
-            case 'red-orange':
-                primaryColor = '#b71c1c';
-                secondaryColor = '#e53935';
-                accentColor = '#ff9800';
-                break;
-            case 'dark-blue':
-                primaryColor = '#1a237e';
-                secondaryColor = '#3949ab';
-                accentColor = '#00bcd4';
-                break;
-            case 'green-brown':
-                primaryColor = '#2e7d32';
-                secondaryColor = '#558b2f';
-                accentColor = '#795548';
-                break;
-            case 'blue-green':
-            default:
-                primaryColor = '#1a5f7a';
-                secondaryColor = '#2c8a8a';
-                accentColor = '#4caf50';
-                break;
-        }
-        
-        // Root CSS değişkenlerini güncelle
-        document.documentElement.style.setProperty('--primary-color', primaryColor);
-        document.documentElement.style.setProperty('--secondary-color', secondaryColor);
-        document.documentElement.style.setProperty('--accent-color', accentColor);
-        
-        // Admin panel bileşenlerini güncelle
-        document.querySelectorAll('.card-header').forEach(el => {
-            el.style.backgroundColor = secondaryColor;
-        });
-        
-        document.querySelectorAll('.btn-primary').forEach(el => {
-            el.style.backgroundColor = primaryColor;
-            el.style.borderColor = primaryColor;
-        });
-    }
-    
-    // Form gönderiminden önce
-    document.querySelector('form').addEventListener('submit', function(e) {
-        // Form gönderiminden önce önbellek temizleme işlemi
-        localStorage.setItem('settingsUpdated', Date.now());
-        
-        // Normal form gönderimi devam eder, yeniden yüklemeyi önlemiyoruz
-        // Sadece cache buster ekliyoruz
+        // Form normal şekilde gönderilecek
         return true;
     });
     
-    // Başlangıçta önizlemeyi güncelle
-    updateSocialMediaPreview();
-    
-    // Sayfa yüklendiğinde, eğer ayarlar güncellenmiş ise
-    if (localStorage.getItem('settingsUpdated')) {
-        // Önbelleği temizle
-        localStorage.removeItem('settingsUpdated');
-        
-        // CSS ve renk şeması değişkenleri güncellensin diye sayfayı hard refresh yapıyoruz
-        if (window.location.search.indexOf('updated=1') === -1) {
-            // Eğer zaten updated parametresi yoksa, ekleyerek sayfayı yeniliyoruz
-            window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'updated=1&t=' + new Date().getTime();
-        }
+    // Sayfa yüklendiğinde önbellek kontrolü
+    if (window.location.search.includes('updated=1')) {
+        // Sayfayı yeniden yükle ihtiyacı kaldırıldı
+        console.log('Ayarlar güncellendi.');
     }
-    
-    // Sosyal medya giriş alanları değiştiğinde
-    socialMediaInputs.forEach(input => {
-        input.addEventListener('input', updateSocialMediaPreview);
-    });
 });
 </script>
 
