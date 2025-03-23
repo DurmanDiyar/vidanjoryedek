@@ -60,6 +60,10 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
             
             $message = 'Referans başarıyla silindi.';
             $messageType = 'success';
+            
+            // Başarılı silme işleminden sonra yönlendirme yap
+            header("Location: references.php?deleted=1");
+            exit;
         } else {
             $message = 'Referans silinirken bir hata oluştu.';
             $messageType = 'danger';
@@ -70,92 +74,126 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     }
 }
 
-// Form gönderildiğinde
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Form verilerini al
-    $referenceId = isset($_POST['reference_id']) ? intval($_POST['reference_id']) : 0;
-    $companyName = isset($_POST['company_name']) ? trim($_POST['company_name']) : '';
-    $description = isset($_POST['description']) ? trim($_POST['description']) : '';
-    $websiteUrl = isset($_POST['website_url']) ? trim($_POST['website_url']) : '';
-    
-    // Logo yükleme işlemi
-    $logoPath = '';
-    $uploadError = '';
-    
-    if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0) {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        $maxFileSize = 2 * 1024 * 1024; // 2MB
+    // Add or update reference
+    if (isset($_POST['add_reference']) || isset($_POST['update_reference'])) {
+        $company_name = trim($_POST['company_name']);
+        $description = trim($_POST['description'] ?? '');
+        $website_url = trim($_POST['website_url'] ?? '');
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : null;
         
-        if (!in_array($_FILES['logo']['type'], $allowedTypes)) {
-            $uploadError = 'Sadece JPEG, PNG ve GIF formatları desteklenmektedir.';
-        } elseif ($_FILES['logo']['size'] > $maxFileSize) {
-            $uploadError = 'Dosya boyutu 2MB\'dan büyük olamaz.';
+        // Validate input
+        if (empty($company_name)) {
+            $error = "Firma adı boş olamaz.";
         } else {
-            $fileName = time() . '_' . basename($_FILES['logo']['name']);
-            $targetFilePath = $uploadsDir . $fileName;
+            // Process logo upload if exists
+            $logo_path = isset($_POST['existing_logo']) ? $_POST['existing_logo'] : '';
             
-            if (move_uploaded_file($_FILES['logo']['tmp_name'], $targetFilePath)) {
-                $logoPath = 'uploads/references/' . $fileName;
+            if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0) {
+                $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                $filename = $_FILES['logo']['name'];
+                $ext = pathinfo($filename, PATHINFO_EXTENSION);
+                
+                if (in_array(strtolower($ext), $allowed)) {
+                    $newname = time() . '_' . $filename;
+                    $target = '../uploads/references/' . $newname;
+                    
+                    // Ensure the upload directory exists
+                    if (!file_exists('../uploads/references/')) {
+                        mkdir('../uploads/references/', 0777, true);
+                    }
+                    
+                    // Doğrudan dosyayı yükle (boyutlandırma işlemi yapmadan)
+                    if (move_uploaded_file($_FILES['logo']['tmp_name'], $target)) {
+                        $logo_path = $newname;
+                    } else {
+                        $error = "Dosya yüklenirken bir hata oluştu.";
+                    }
+                } else {
+                    $error = "Geçersiz dosya türü. Sadece JPG, JPEG, PNG ve GIF dosyaları kabul edilir.";
+                }
+            }
+            
+            if (!isset($error)) {
+                try {
+                    if ($id) {
+                        // Update existing reference
+                        $stmt = $db->prepare("UPDATE referencess SET company_name = ?, logo_path = ?, description = ?, website_url = ? WHERE id = ?");
+                        $result = $stmt->execute([$company_name, $logo_path, $description, $website_url, $id]);
+                        
+                        if ($result) {
+                            error_log("Referans güncellendi: ID=" . $id . ", " . $company_name . ", Logo: " . $logo_path);
+                            $message = "Referans başarıyla güncellendi.";
+                            $messageType = "success";
+                            
+                            // Düzenleme modundan çık
+                            header("Location: references.php");
+                            exit;
+                        } else {
+                            $message = "Referans güncellenirken bir hata oluştu.";
+                            $messageType = "danger";
+                            error_log("Referans güncelleme başarısız: " . print_r($stmt->errorInfo(), true));
+                        }
+                    } else {
+                        // Add new reference
+                        $stmt = $db->prepare("INSERT INTO referencess (company_name, logo_path, description, website_url) VALUES (?, ?, ?, ?)");
+                        $result = $stmt->execute([$company_name, $logo_path, $description, $website_url]);
+                        
+                        if ($result) {
+                            // Debug bilgisi ekle
+                            error_log("Referans başarıyla eklendi: " . $company_name . ", Logo: " . $logo_path);
+                            $message = "Referans başarıyla eklendi.";
+                            $messageType = "success";
+                            
+                            // Başarılı ekleme sonrası yönlendirme yap
+                            header("Location: references.php?success=1");
+                            exit;
+                            
+                            // Form verilerini temizle - sayfa yenilendiğinde formu sıfırla
+                            $_POST = array();
+                        } else {
+                            $message = "Referans eklenirken bir hata oluştu.";
+                            $messageType = "danger";
+                            error_log("Referans ekleme başarısız: " . print_r($stmt->errorInfo(), true));
+                        }
+                    }
+                } catch (PDOException $e) {
+                    $message = "Veritabanı hatası: " . $e->getMessage();
+                    $messageType = "danger";
+                }
             } else {
-                $uploadError = 'Dosya yüklenirken bir hata oluştu.';
+                $message = $error;
+                $messageType = "danger";
             }
         }
     }
     
-    // Verileri doğrula
-    if (empty($companyName)) {
-        $message = 'Firma adı boş olamaz.';
-        $messageType = 'danger';
-    } elseif (!empty($uploadError)) {
-        $message = 'Logo yükleme hatası: ' . $uploadError;
-        $messageType = 'danger';
-    } else {
+    // Delete reference
+    if (isset($_POST['delete_reference'])) {
+        $id = (int)$_POST['id'];
+        
         try {
-            // Yeni referans ekleme veya mevcut referansı güncelleme
-            if ($referenceId > 0) {
-                // Güncelleme
-                if (!empty($logoPath)) {
-                    // Eski logoyu bul ve sil
-                    $stmt = $db->prepare("SELECT logo_path FROM referencess WHERE id = ?");
-                    $stmt->execute([$referenceId]);
-                    $oldReference = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
-                    if ($oldReference && !empty($oldReference['logo_path']) && file_exists('../' . $oldReference['logo_path'])) {
-                        unlink('../' . $oldReference['logo_path']);
-                    }
-                    
-                    // Logo ile birlikte güncelleme
-                    $stmt = $db->prepare("UPDATE referencess SET company_name = ?, logo_path = ?, description = ?, website_url = ? WHERE id = ?");
-                    $result = $stmt->execute([$companyName, $logoPath, $description, $websiteUrl, $referenceId]);
-                } else {
-                    // Logo olmadan güncelleme
-                    $stmt = $db->prepare("UPDATE referencess SET company_name = ?, description = ?, website_url = ? WHERE id = ?");
-                    $result = $stmt->execute([$companyName, $description, $websiteUrl, $referenceId]);
-                }
-                
-                if ($result) {
-                    $message = 'Referans başarıyla güncellendi.';
-                    $messageType = 'success';
-                } else {
-                    $message = 'Referans güncellenirken bir hata oluştu.';
-                    $messageType = 'danger';
-                }
-            } else {
-                // Yeni ekleme
-                $stmt = $db->prepare("INSERT INTO referencess (company_name, logo_path, description, website_url) VALUES (?, ?, ?, ?)");
-                $result = $stmt->execute([$companyName, $logoPath, $description, $websiteUrl]);
-                
-                if ($result) {
-                    $message = 'Referans başarıyla eklendi.';
-                    $messageType = 'success';
-                } else {
-                    $message = 'Referans eklenirken bir hata oluştu.';
-                    $messageType = 'danger';
+            // Get logo path first to delete the file
+            $stmt = $db->prepare("SELECT logo_path FROM referencess WHERE id = ?");
+            $stmt->execute([$id]);
+            $reference = $stmt->fetch();
+            
+            if ($reference && !empty($reference['logo_path'])) {
+                $logo_file = '../uploads/references/' . $reference['logo_path'];
+                if (file_exists($logo_file)) {
+                    unlink($logo_file);
                 }
             }
+            
+            // Delete from database
+            $stmt = $db->prepare("DELETE FROM referencess WHERE id = ?");
+            $stmt->execute([$id]);
+            $message = "Referans başarıyla silindi.";
+            $messageType = "success";
         } catch (PDOException $e) {
-            $message = 'Veritabanı hatası: ' . $e->getMessage();
-            $messageType = 'danger';
+            $message = "Veritabanı hatası: " . $e->getMessage();
+            $messageType = "danger";
         }
     }
 }
@@ -183,6 +221,15 @@ try {
     $references = [];
     $message = 'Veritabanı hatası: ' . $e->getMessage();
     $messageType = 'danger';
+}
+
+// URL parametrelerinden mesaj durumunu kontrol et
+if (isset($_GET['success']) && $_GET['success'] == 1) {
+    $message = 'Referans başarıyla eklendi.';
+    $messageType = 'success';
+} elseif (isset($_GET['deleted']) && $_GET['deleted'] == 1) {
+    $message = 'Referans başarıyla silindi.';
+    $messageType = 'success';
 }
 
 // Sayfa başlığı
@@ -216,7 +263,7 @@ include 'includes/header.php';
                 <div class="card-body">
                     <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post" enctype="multipart/form-data">
                         <?php if ($editReference): ?>
-                            <input type="hidden" name="reference_id" value="<?php echo $editReference['id']; ?>">
+                            <input type="hidden" name="id" value="<?php echo $editReference['id']; ?>">
                         <?php endif; ?>
                         
                         <div class="mb-3">
@@ -238,20 +285,21 @@ include 'includes/header.php';
                         
                         <div class="mb-3">
                             <label for="logo" class="form-label">Logo</label>
-                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*" <?php echo $editReference && !empty($editReference['logo_path']) ? '' : 'required'; ?>>
-                            <small class="form-text text-muted">Önerilen boyut: 200x100 piksel. Maksimum dosya boyutu: 2MB</small>
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*" <?php echo !$editReference ? 'required' : ''; ?>>
+                            <small class="form-text text-muted">Logo yükleyiniz. Önerilen boyut minimum 400x300 piksel. Maksimum dosya boyutu: 2MB</small>
                             
                             <?php if ($editReference && !empty($editReference['logo_path'])): ?>
                                 <div class="mt-2">
                                     <p>Mevcut Logo:</p>
-                                    <img src="../<?php echo htmlspecialchars($editReference['logo_path']); ?>" class="img-thumbnail" style="max-height: 100px;">
+                                    <img src="../uploads/references/<?php echo htmlspecialchars($editReference['logo_path']); ?>" class="img-thumbnail" style="max-height: 100px;">
                                     <p class="small text-muted mt-1">Yeni bir logo yüklerseniz, mevcut logo değiştirilecektir.</p>
+                                    <input type="hidden" name="existing_logo" value="<?php echo htmlspecialchars($editReference['logo_path']); ?>">
                                 </div>
                             <?php endif; ?>
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" name="<?php echo $editReference ? 'update_reference' : 'add_reference'; ?>" class="btn btn-primary">
                                 <?php echo $editReference ? 'Güncelle' : 'Ekle'; ?>
                             </button>
                             <?php if ($editReference): ?>
@@ -291,7 +339,7 @@ include 'includes/header.php';
                                         <td><?php echo $reference['id']; ?></td>
                                         <td>
                                             <?php if (!empty($reference['logo_path'])): ?>
-                                                <img src="../<?php echo htmlspecialchars($reference['logo_path']); ?>" class="img-thumbnail" style="max-height: 50px;">
+                                                <img src="../uploads/references/<?php echo htmlspecialchars($reference['logo_path']); ?>" class="img-thumbnail" style="max-height: 50px;">
                                             <?php else: ?>
                                                 <span class="text-muted">Logo yok</span>
                                             <?php endif; ?>
@@ -311,9 +359,12 @@ include 'includes/header.php';
                                             <a href="references.php?edit=<?php echo $reference['id']; ?>" class="btn btn-sm btn-primary">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="references.php?delete=<?php echo $reference['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bu referansı silmek istediğinize emin misiniz?')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                            <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post" style="display:inline;">
+                                                <input type="hidden" name="id" value="<?php echo $reference['id']; ?>">
+                                                <button type="submit" name="delete_reference" class="btn btn-sm btn-danger" onclick="return confirm('Bu referansı silmek istediğinize emin misiniz?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>

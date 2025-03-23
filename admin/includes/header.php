@@ -29,58 +29,133 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- Fontlar -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Custom Admin CSS -->
     <link rel="stylesheet" href="<?php echo ADMIN_URL; ?>/assets/css/admin.css?v=<?php echo time(); ?>">
     
-    <!-- Özel Renk Şeması Değişkenleri -->
-    <?php 
-    // Sayfayı her yenilemede taze renk şeması değişkenlerini almak için önbelleği atlama
-    $cacheBuster = time(); 
-    echo getColorSchemeVariables(); 
-    ?>
+    <!-- Renk şeması değişikliklerinin anında yansıması için cache kontrolleri -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
-    <!-- Admin Panel için Ek Stil Geçersiz Kılmalar -->
+    <!-- Renk Şeması Değişkenlerini Al -->
+    <?php echo getColorSchemeVariables(); ?>
+    
+    <!-- Özel admin paneli stil uygulamaları -->
     <style>
-        /* Admin panel özel stilleri */
-        .sidebar { 
-            background-color: var(--primary-color); 
-            transition: background-color 0.3s ease-in-out;
+        :root {
+            /* Admin panel genel renkleri */
+            --admin-sidebar-bg: var(--dark-color);
+            --admin-topbar-bg: var(--primary-color);
+            --admin-text-light: #f8f9fa;
+            --admin-accent: var(--accent-color);
         }
-        .sidebar-heading { 
-            color: var(--light-color);
+        
+        /* Sidebar renk ayarları */
+        .sidebar {
+            background-color: var(--admin-sidebar-bg) !important;
         }
-        .sidebar .nav-item .nav-link { 
-            color: rgba(255, 255, 255, 0.9);
+        
+        .sidebar .sidebar-brand {
+            color: var(--admin-text-light) !important;
         }
-        .sidebar .nav-item .nav-link:hover { 
-            color: #fff;
-            background-color: var(--secondary-color);
+        
+        .sidebar-divider {
+            border-color: rgba(255,255,255,0.2) !important;
         }
-        .sidebar .nav-item .nav-link.active { 
-            color: #fff;
-            background-color: var(--secondary-color);
+        
+        /* Sidebar menü öğeleri */
+        .sidebar .nav-item .nav-link {
+            color: rgba(255,255,255,0.8) !important;
         }
-        .topbar { 
-            background-color: #fff;
-            border-bottom: 1px solid rgba(0,0,0,.125);
+        
+        .sidebar .nav-item .nav-link:hover {
+            color: var(--admin-text-light) !important;
+            background-color: rgba(255,255,255,0.1) !important;
         }
-        .card-header { 
-            background-color: var(--primary-color) !important; 
-            color: #fff !important;
-            transition: background-color 0.3s ease-in-out;
+        
+        .sidebar .nav-item .nav-link.active {
+            color: var(--admin-text-light) !important;
+            background-color: var(--primary-color) !important;
         }
-        .btn-primary { 
-            background-color: var(--primary-color) !important; 
+        
+        /* Üst çubuk renk ayarları */
+        .topbar {
+            background-color: var(--admin-topbar-bg) !important;
+        }
+        
+        .topbar .nav-item .nav-link {
+            color: var(--admin-text-light) !important;
+        }
+        
+        /* Kart başlıkları */
+        .card .card-header {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+        }
+        
+        /* Form bileşenleri */
+        .form-control:focus {
             border-color: var(--primary-color) !important;
-            transition: all 0.3s ease-in-out;
+            box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb), 0.25) !important;
         }
-        .btn-primary:hover, .btn-primary:focus { 
-            background-color: var(--secondary-color) !important; 
+        
+        /* Butonlar */
+        .btn-primary {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color) !important;
             border-color: var(--secondary-color) !important;
         }
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+        
+        /* Animasyonlar ve geçişler */
+        .btn, .card, .nav-link, .nav-item {
+            transition: all 0.3s ease !important;
+        }
+        
+        /* İçerik alanı genel stilleri */
+        .container-fluid {
+            background-color: var(--light-color) !important;
+        }
+        
+        /* Renk Şeması Önizleme */
+        .color-scheme-preview {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .color-scheme-preview .color-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .color-scheme-preview .primary {
+            background-color: var(--primary-color);
+        }
+        
+        .color-scheme-preview .secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .color-scheme-preview .accent {
+            background-color: var(--accent-color);
+        }
+        
+        .color-scheme-preview .dark {
+            background-color: var(--dark-color);
+        }
+        
+        .color-scheme-preview .light {
+            background-color: var(--light-color);
+            border: 1px solid #ddd;
         }
     </style>
 </head>
@@ -115,8 +190,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             <i class="fas fa-images me-2"></i>
                             <span>Slider Yönetimi</span>
                         </a>
-                    </li>
-                    
+                    </li>                  
                     <li class="nav-item">
                         <a href="<?php echo ADMIN_URL; ?>/services.php" class="nav-link <?php echo ($currentPage == 'services.php') ? 'active' : ''; ?>">
                             <i class="fas fa-cogs me-2"></i>
@@ -142,6 +216,19 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <a href="<?php echo ADMIN_URL; ?>/messages.php" class="nav-link <?php echo ($currentPage == 'messages.php') ? 'active' : ''; ?>">
                             <i class="fas fa-envelope me-2"></i>
                             <span>Mesajlar</span>
+                            <?php
+                            try {
+                                $db = getDbConnection();
+                                $stmt = $db->query("SELECT COUNT(*) FROM contact_messages WHERE is_read = 0");
+                                $unreadCount = $stmt->fetchColumn();
+                                
+                                if ($unreadCount > 0) {
+                                    echo '<span class="badge bg-danger ms-2">' . $unreadCount . '</span>';
+                                }
+                            } catch (PDOException $e) {
+                                // Hata durumunda sessizce geç
+                            }
+                            ?>
                         </a>
                     </li>
                     
@@ -155,7 +242,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <li class="nav-item">
                         <a href="<?php echo ADMIN_URL; ?>/settings.php" class="nav-link <?php echo ($currentPage == 'settings.php') ? 'active' : ''; ?>">
                             <i class="fas fa-cog me-2"></i>
-                            <span>Ayarlar</span>
+                            <span>Site Ayarları</span>
                         </a>
                     </li>
                 </ul>

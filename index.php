@@ -2,6 +2,12 @@
 /**
  * Homepage for the corporate website
  */
+// Cache kontrolü - browser cache'ini temizle
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
+
 require_once 'config.php';
 
 // Get site settings
@@ -77,8 +83,14 @@ try {
 try {
     $stmt = $pdo->query("SELECT * FROM referencess ORDER BY id ASC LIMIT 8");
     $references = $stmt->fetchAll();
+    // Debug için referans verilerini kontrol et
+    error_log("Referans sayısı: " . count($references));
+    foreach ($references as $ref) {
+        error_log("Referans: " . $ref['company_name'] . ", Logo: " . $ref['logo_path']);
+    }
 } catch (PDOException $e) {
     // Fallback references if database error
+    error_log("Referans verileri çekilemedi: " . $e->getMessage());
     $references = [];
 }
 ?>
@@ -99,8 +111,8 @@ try {
                         <h1><?php echo htmlspecialchars($item['title']); ?></h1>
                         <p><?php echo htmlspecialchars($item['description']); ?></p>
                         <div class="mt-4">
-                            <a href="contact.php" class="btn btn-primary btn-lg">Bize Ulaşın</a>
-                            <a href="services.php" class="btn btn-outline-light btn-lg ms-2">Hizmetlerimiz</a>
+                            <a href="pages/iletisim.php" class="btn btn-primary btn-lg">Bize Ulaşın</a>
+                            <a href="pages/hizmetler.php" class="btn btn-outline-light btn-lg ms-2">Hizmetlerimiz</a>
                         </div>
                     </div>
                 </div>
@@ -164,14 +176,14 @@ try {
                         </div>
                         <h3><?php echo htmlspecialchars($service['name']); ?></h3>
                         <p><?php echo htmlspecialchars($service['description']); ?></p>
-                        <a href="service-detail.php?id=<?php echo $service['id']; ?>" class="btn btn-outline-primary">Detaylı Bilgi</a>
+                        <a href="pages/hizmet-detay.php?id=<?php echo $service['id']; ?>" class="btn btn-outline-primary">Detaylı Bilgi</a>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
         
         <div class="text-center mt-4">
-            <a href="services.php" class="btn btn-primary">Tüm Hizmetlerimiz</a>
+            <a href="pages/hizmetler.php" class="btn btn-primary">Tüm Hizmetlerimiz</a>
         </div>
     </div>
 </section>
@@ -200,7 +212,7 @@ try {
         <div class="row align-items-center">
             <div class="col-lg-6 mb-4 mb-lg-0">
                 <div class="about-image position-relative">
-                    <img src="<?php echo SITE_URL; ?>/assets/img/about.jpg" alt="Hakkımızda" class="img-fluid rounded shadow">
+                    <img src="<?php echo SITE_URL; ?>/assets/img/a.png" alt="Hakkımızda" class="img-fluid rounded shadow">
                     <div class="experience-badge position-absolute bg-primary text-white py-3 px-4 rounded shadow" style="bottom: -20px; right: 30px;">
                         <span class="h2 fw-bold d-block">15+</span>
                         <span>Yıllık Deneyim</span>
@@ -210,12 +222,12 @@ try {
             <div class="col-lg-6">
                 <div class="about-content ps-lg-4">
                     <h6 class="text-primary fw-bold mb-2 text-uppercase">Hakkımızda</h6>
-                    <h2 class="mb-4">Profesyonel Çözüm Ortağınız</h2>
+                    <h2 class="mb-4">Profesyonel Vidanjör Hizmetleri</h2>
                     <p class="lead">
-                        Firmamız, sektörde uzun yıllara dayanan deneyimi ile müşterilerine kaliteli ve güvenilir hizmet sunmaktadır.
+                        Durman Vidanjör olarak, İzmir, İstanbul ve Tekirdağ bölgelerinde 15+ yıldır profesyonel vidanjör hizmetleri sunmaktayız.
                     </p>
                     <p>
-                        Profesyonel ekibimiz ile ihtiyaçlarınıza uygun çözümler üretiyoruz. Müşteri memnuniyetini ön planda tutarak, her projede en iyi sonucu elde etmek için çalışıyoruz. Teknolojik gelişmeleri yakından takip ederek, modern çözümler sunuyoruz.
+                        Deneyimli ekibimiz ve modern ekipmanlarımız ile kanalizasyon açma, logar temizleme, fosseptik çukuru temizliği, rögar temizliği ve tüm vidanjör hizmetlerinde kaliteli ve güvenilir çözümler sağlıyoruz. 7/24 hizmet anlayışımız ve hızlı müdahale ekiplerimiz ile her zaman yanınızdayız.
                     </p>
                     
                     <div class="row g-3 mt-4">
@@ -224,7 +236,7 @@ try {
                                 <div class="icon-box me-3 bg-primary text-white rounded p-2">
                                     <i class="fas fa-check"></i>
                                 </div>
-                                <span>500+ Tamamlanan Proje</span>
+                                <span>5000+ Başarılı İşlem</span>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -232,7 +244,7 @@ try {
                                 <div class="icon-box me-3 bg-primary text-white rounded p-2">
                                     <i class="fas fa-check"></i>
                                 </div>
-                                <span>50+ Uzman Personel</span>
+                                <span>15+ Uzman Personel</span>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -240,7 +252,7 @@ try {
                                 <div class="icon-box me-3 bg-primary text-white rounded p-2">
                                     <i class="fas fa-check"></i>
                                 </div>
-                                <span>300+ Mutlu Müşteri</span>
+                                <span>1500+ Mutlu Müşteri</span>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -248,7 +260,7 @@ try {
                                 <div class="icon-box me-3 bg-primary text-white rounded p-2">
                                     <i class="fas fa-check"></i>
                                 </div>
-                                <span>7/24 Teknik Destek</span>
+                                <span>7/24 Acil Servis</span>
                             </div>
                         </div>
                     </div>
@@ -271,15 +283,23 @@ try {
         </div>
         <div class="row">
             <?php
-            foreach ($references as $reference):
+            if (!empty($references)) {
+                foreach ($references as $reference):
             ?>
             <div class="col-6 col-md-3 col-lg-2 mb-4">
-                <div class="reference-item p-3 h-100 rounded bg-white shadow-sm">
-                    <img src="uploads/<?php echo htmlspecialchars($reference['logo_path']); ?>" class="reference-logo" alt="<?php echo htmlspecialchars($reference['company_name']); ?>">
-                    <h6 class="reference-name small text-center mt-2"><?php echo htmlspecialchars($reference['company_name']); ?></h6>
+                <div class="reference-item shadow">
+                    <div class="reference-logo">
+                        <img src="uploads/references/<?php echo htmlspecialchars($reference['logo_path']); ?>" alt="<?php echo htmlspecialchars($reference['company_name']); ?>" class="img-fluid">
+                    </div>
+                    <h6 class="reference-name"><?php echo htmlspecialchars($reference['company_name']); ?></h6>
                 </div>
             </div>
-            <?php endforeach; ?>
+            <?php 
+                endforeach;
+            } else {
+                echo '<div class="col-12 text-center"><p>Henüz referans eklenmemiştir.</p></div>';
+            }
+            ?>
         </div>
         
         <div class="text-center mt-4">

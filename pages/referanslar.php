@@ -105,16 +105,16 @@ include_once '../includes/header.php';
         <div class="row">
             <?php foreach ($references as $reference): ?>
                 <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="reference-item p-3 h-100 rounded bg-white shadow-sm">
-                        <div class="reference-logo mb-3 py-3">
-                            <img src="<?php echo $reference['logo_path']; ?>" alt="<?php echo $reference['company_name']; ?>" class="img-fluid">
+                    <div class="reference-item shadow">
+                        <div class="reference-logo">
+                            <img src="../uploads/references/<?php echo $reference['logo_path']; ?>" alt="<?php echo htmlspecialchars($reference['company_name']); ?>" class="img-fluid">
                         </div>
                         <div class="reference-content">
-                            <h4 class="h5 mb-3"><?php echo $reference['company_name']; ?></h4>
-                            <p class="text-muted mb-3"><?php echo $reference['description']; ?></p>
+                            <h4 class="h5"><?php echo htmlspecialchars($reference['company_name']); ?></h4>
+                            <p class="description-text"><?php echo mb_substr(htmlspecialchars($reference['description']), 0, 150) . (mb_strlen($reference['description']) > 150 ? '...' : ''); ?></p>
                             <?php if (!empty($reference['website_url'])): ?>
-                                <a href="<?php echo $reference['website_url']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
-                                    <i class="fas fa-external-link-alt"></i> Web Sitesi
+                                <a href="<?php echo htmlspecialchars($reference['website_url']); ?>" class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="fas fa-external-link-alt me-1"></i> Web Sitesi
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -125,58 +125,7 @@ include_once '../includes/header.php';
     </div>
 </section>
 
-<!-- Müşteri Yorumları -->
-<section class="testimonial-section">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12 mb-5 text-center">
-                <h2>Müşteri Yorumları</h2>
-                <p class="lead">Müşterilerimizin bizim hakkımızda söyledikleri.</p>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-lg-4 col-md-6">
-                <div class="testimonial-item">
-                    <p>"Profesyonel ekip ve kaliteli hizmet. Projemizi zamanında ve bütçe dahilinde tamamladılar."</p>
-                    <div class="testimonial-author">
-                        <img src="../assets/img/testimonial1.jpg" alt="Ahmet Yılmaz">
-                        <div class="testimonial-author-info">
-                            <h5>Ahmet Yılmaz</h5>
-                            <span>ABC Şirketi, Genel Müdür</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4 col-md-6">
-                <div class="testimonial-item">
-                    <p>"Uzun yıllardır çalıştığımız güvenilir bir iş ortağı. Her zaman çözüm odaklı yaklaşımları ile bizi memnun ediyorlar."</p>
-                    <div class="testimonial-author">
-                        <img src="../assets/img/testimonial2.jpg" alt="Ayşe Kaya">
-                        <div class="testimonial-author-info">
-                            <h5>Ayşe Kaya</h5>
-                            <span>XYZ Holding, Satın Alma Müdürü</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4 col-md-6">
-                <div class="testimonial-item">
-                    <p>"Teknik bilgi ve deneyimleri ile sektörde fark yaratıyorlar. Sorunlarımıza hızlı çözümler üretiyorlar."</p>
-                    <div class="testimonial-author">
-                        <img src="../assets/img/testimonial3.jpg" alt="Mehmet Demir">
-                        <div class="testimonial-author-info">
-                            <h5>Mehmet Demir</h5>
-                            <span>DEF Teknoloji, Teknik Direktör</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+
 
 <!-- İşbirliği CTA -->
 <section class="cta-section bg-primary text-white py-5 text-center">

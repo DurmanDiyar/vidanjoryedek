@@ -44,6 +44,10 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
         if ($result) {
             $message = 'Hizmet başarıyla silindi.';
             $messageType = 'success';
+            
+            // Başarılı silme işleminden sonra yönlendirme yap
+            header("Location: services.php?deleted=1");
+            exit;
         } else {
             $message = 'Hizmet silinirken bir hata oluştu.';
             $messageType = 'danger';
@@ -78,6 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($result) {
                     $message = 'Hizmet başarıyla güncellendi.';
                     $messageType = 'success';
+                    
+                    // Başarılı güncellemeden sonra yönlendirme yap
+                    header("Location: services.php?updated=1");
+                    exit;
                 } else {
                     $message = 'Hizmet güncellenirken bir hata oluştu.';
                     $messageType = 'danger';
@@ -90,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($result) {
                     $message = 'Hizmet başarıyla eklendi.';
                     $messageType = 'success';
+                    
+                    // Başarılı eklemeden sonra yönlendirme yap
+                    header("Location: services.php?success=1");
+                    exit;
                 } else {
                     $message = 'Hizmet eklenirken bir hata oluştu.';
                     $messageType = 'danger';
@@ -125,6 +137,18 @@ try {
     $services = [];
     $message = 'Veritabanı hatası: ' . $e->getMessage();
     $messageType = 'danger';
+}
+
+// URL parametrelerinden mesaj durumunu kontrol et
+if (isset($_GET['success']) && $_GET['success'] == 1) {
+    $message = 'Hizmet başarıyla eklendi.';
+    $messageType = 'success';
+} elseif (isset($_GET['updated']) && $_GET['updated'] == 1) {
+    $message = 'Hizmet başarıyla güncellendi.';
+    $messageType = 'success';
+} elseif (isset($_GET['deleted']) && $_GET['deleted'] == 1) {
+    $message = 'Hizmet başarıyla silindi.';
+    $messageType = 'success';
 }
 
 // Sayfa başlığı

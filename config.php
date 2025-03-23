@@ -55,52 +55,65 @@ function getDbConnection() {
  * @return array Site settings
  */
 function getSiteSettings() {
-    static $settings;
+    static $settings = null;
     
-    if (!$settings) {
+    if ($settings === null) {
         try {
             $pdo = getDbConnection();
             $stmt = $pdo->query("SELECT * FROM site_settings WHERE id = 1");
-            $settings = $stmt->fetch();
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if (!$settings) {
-                // Default settings if not found in database
+            if ($data) {
+                $settings = [
+                    'site_title' => $data['site_title'] ?? 'Kurumsal Web Sitesi',
+                    'contact_phone' => $data['contact_phone'] ?? '+90 555 123 4567',
+                    'contact_email' => $data['contact_email'] ?? 'info@example.com',
+                    'contact_address' => $data['contact_address'] ?? 'Örnek Mahallesi, Örnek Caddesi No:123, İstanbul',
+                    'color_scheme' => $data['color_scheme'] ?? 'blue-green',
+                    'page_header_bg' => $data['page_header_bg'] ?? 'page-header-bg.jpg',
+                    'facebook_url' => $data['facebook_url'] ?? '#',
+                    'twitter_url' => $data['twitter_url'] ?? '#',
+                    'instagram_url' => $data['instagram_url'] ?? '#',
+                    'linkedin_url' => $data['linkedin_url'] ?? '#',
+                    'youtube_url' => $data['youtube_url'] ?? '#',
+                    'whatsapp_phone' => $data['whatsapp_phone'] ?? '',
+                    'site_description' => $data['site_description'] ?? 'Profesyonel kurumsal hizmetler sunan web sitemize hoş geldiniz.',
+                    'site_keywords' => $data['site_keywords'] ?? 'kurumsal, hizmetler, profesyonel'
+                ];
+            } else {
                 $settings = [
                     'site_title' => 'Kurumsal Web Sitesi',
                     'contact_phone' => '+90 555 123 4567',
-                    'contact_email' => 'info@example.com',
-                    'contact_address' => 'İstanbul, Türkiye',
+                    'contact_email' => 'info@example.com', 
+                    'contact_address' => 'Örnek Mahallesi, Örnek Caddesi No:123, İstanbul',
                     'color_scheme' => 'blue-green',
                     'page_header_bg' => 'page-header-bg.jpg',
                     'facebook_url' => '#',
                     'twitter_url' => '#',
                     'instagram_url' => '#',
-                    'linkedin_url' => '#',
-                    'youtube_url' => '#'
+                    'linkedin_url' => '#', 
+                    'youtube_url' => '#',
+                    'whatsapp_phone' => '',
+                    'site_description' => 'Profesyonel kurumsal hizmetler sunan web sitemize hoş geldiniz.',
+                    'site_keywords' => 'kurumsal, hizmetler, profesyonel'
                 ];
             }
-            
-            // Sosyal medya URL'leri yoksa varsayılan değerleri ata
-            if (!isset($settings['facebook_url'])) $settings['facebook_url'] = '#';
-            if (!isset($settings['twitter_url'])) $settings['twitter_url'] = '#';
-            if (!isset($settings['instagram_url'])) $settings['instagram_url'] = '#';
-            if (!isset($settings['linkedin_url'])) $settings['linkedin_url'] = '#';
-            if (!isset($settings['youtube_url'])) $settings['youtube_url'] = '#';
-            
         } catch (PDOException $e) {
-            // Default settings if database error
             $settings = [
                 'site_title' => 'Kurumsal Web Sitesi',
                 'contact_phone' => '+90 555 123 4567',
                 'contact_email' => 'info@example.com',
-                'contact_address' => 'İstanbul, Türkiye',
+                'contact_address' => 'Örnek Mahallesi, Örnek Caddesi No:123, İstanbul',
                 'color_scheme' => 'blue-green',
                 'page_header_bg' => 'page-header-bg.jpg',
                 'facebook_url' => '#',
                 'twitter_url' => '#',
                 'instagram_url' => '#',
                 'linkedin_url' => '#',
-                'youtube_url' => '#'
+                'youtube_url' => '#',
+                'whatsapp_phone' => '',
+                'site_description' => 'Profesyonel kurumsal hizmetler sunan web sitemize hoş geldiniz.',
+                'site_keywords' => 'kurumsal, hizmetler, profesyonel'
             ];
         }
     }
@@ -114,155 +127,173 @@ function getSiteSettings() {
  * @return string Renk şeması CSS değişkenleri
  */
 function getColorSchemeVariables() {
-    // Veritabanından taze ayarları al ve önbelleğe almayı engelle
     try {
-        $pdo = getDbConnection();
-        $stmt = $pdo->query("SELECT color_scheme, page_header_bg FROM site_settings WHERE id = 1");
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        $colorScheme = isset($result['color_scheme']) ? $result['color_scheme'] : 'blue-green';
-        $pageHeaderBg = isset($result['page_header_bg']) ? $result['page_header_bg'] : 'page-header-bg.jpg';
+        // Her seferinde yeni PDO bağlantısı oluştur
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ];
+        
+        $db = new PDO($dsn, DB_USER, DB_PASS, $options);
+        
+        // Her zaman taze veri almak için önbelleği kapat
+        $cacheBuster = time();
+        
+        // Site ayarlarını sorgula
+        $stmt = $db->prepare("SELECT color_scheme FROM site_settings ORDER BY id DESC LIMIT 1");
+        $stmt->execute();
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Renk şeması değerini al veya varsayılan değer kullan
+        $colorScheme = isset($settings['color_scheme']) ? $settings['color_scheme'] : 'blue-green';
+        
+        // Debug: renk şemasını loglayalım
+        error_log("getColorSchemeVariables() fonksiyonunda kullanılan renk şeması: " . $colorScheme);
+        
+        // Renk şeması değerine göre CSS değişkenlerini tanımla
+        switch ($colorScheme) {
+            case 'blue-green':
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #1a73e8;
+                            --secondary-color: #34a853;
+                            --accent-color: #fbbc04;
+                            --dark-color: #202124;
+                            --light-color: #f8f9fa;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #1a73e8;
+                            --footer-bg-color: #202124;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+            case 'red-orange':
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #ea4335;
+                            --secondary-color: #ff7043;
+                            --accent-color: #ffca28;
+                            --dark-color: #3e2723;
+                            --light-color: #fff3e0;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #ea4335;
+                            --footer-bg-color: #3e2723;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+            case 'purple-pink':
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #673ab7;
+                            --secondary-color: #e91e63;
+                            --accent-color: #ffc107;
+                            --dark-color: #311b92;
+                            --light-color: #f3e5f5;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #673ab7;
+                            --footer-bg-color: #311b92;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+            case 'green-teal':
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #4caf50;
+                            --secondary-color: #009688;
+                            --accent-color: #ffd600;
+                            --dark-color: #1b5e20;
+                            --light-color: #e8f5e9;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #4caf50;
+                            --footer-bg-color: #1b5e20;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+            case 'dark-blue':
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #0d47a1;
+                            --secondary-color: #29b6f6;
+                            --accent-color: #ffd600;
+                            --dark-color: #002171;
+                            --light-color: #e3f2fd;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #0d47a1;
+                            --footer-bg-color: #002171;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+            case 'green-brown':
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #4caf50;
+                            --secondary-color: #8d6e63;
+                            --accent-color: #ffc107;
+                            --dark-color: #1b5e20;
+                            --light-color: #e8f5e9;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #4caf50;
+                            --footer-bg-color: #3e2723;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+            default:
+                return "
+                    <style>
+                        :root {
+                            --primary-color: #1a73e8;
+                            --secondary-color: #34a853;
+                            --accent-color: #fbbc04;
+                            --dark-color: #202124;
+                            --light-color: #f8f9fa;
+                            --main-bg-color: #ffffff;
+                            --header-bg-color: #1a73e8;
+                            --footer-bg-color: #202124;
+                        }
+                    </style>
+                    <!-- Cache Buster: {$cacheBuster} -->
+                ";
+                break;
+        }
     } catch (PDOException $e) {
-        // Hata durumunda varsayılan değerleri kullan
-        $colorScheme = 'blue-green';
-        $pageHeaderBg = 'page-header-bg.jpg';
+        // Hata durumunda varsayılan renk şemasını döndür
+        error_log("Renk şeması alınırken hata oluştu: " . $e->getMessage());
+        $cacheBuster = time();
+        return "
+            <style>
+                :root {
+                    --primary-color: #1a73e8;
+                    --secondary-color: #34a853;
+                    --accent-color: #fbbc04;
+                    --dark-color: #202124;
+                    --light-color: #f8f9fa;
+                    --main-bg-color: #ffffff;
+                    --header-bg-color: #1a73e8;
+                    --footer-bg-color: #202124;
+                }
+            </style>
+            <!-- Cache Buster Fallback: {$cacheBuster} -->
+        ";
     }
-    
-    $variables = [];
-    
-    // Renk şeması varyasyonları
-    switch ($colorScheme) {
-        case 'purple-pink':
-            $variables = [
-                '--primary-color' => '#6a1b9a',
-                '--secondary-color' => '#9c27b0',
-                '--accent-color' => '#e91e63',
-                '--dark-color' => '#2c3e50',
-                '--light-color' => '#f8f9fa',
-                '--gray-color' => '#6c757d',
-                '--heading-color' => '#333333'
-            ];
-            break;
-            
-        case 'red-orange':
-            $variables = [
-                '--primary-color' => '#b71c1c',
-                '--secondary-color' => '#e53935',
-                '--accent-color' => '#ff9800',
-                '--dark-color' => '#2c3e50',
-                '--light-color' => '#f8f9fa',
-                '--gray-color' => '#6c757d',
-                '--heading-color' => '#333333'
-            ];
-            break;
-            
-        case 'dark-blue':
-            $variables = [
-                '--primary-color' => '#1a237e',
-                '--secondary-color' => '#3949ab',
-                '--accent-color' => '#00bcd4',
-                '--dark-color' => '#2c3e50',
-                '--light-color' => '#f8f9fa',
-                '--gray-color' => '#6c757d',
-                '--heading-color' => '#333333'
-            ];
-            break;
-            
-        case 'green-brown':
-            $variables = [
-                '--primary-color' => '#2e7d32',
-                '--secondary-color' => '#558b2f',
-                '--accent-color' => '#795548',
-                '--dark-color' => '#2c3e50',
-                '--light-color' => '#f8f9fa',
-                '--gray-color' => '#6c757d',
-                '--heading-color' => '#333333'
-            ];
-            break;
-            
-        case 'blue-green':
-        default:
-            $variables = [
-                '--primary-color' => '#1a5f7a',
-                '--secondary-color' => '#2c8a8a',
-                '--accent-color' => '#4caf50',
-                '--dark-color' => '#2c3e50',
-                '--light-color' => '#f8f9fa',
-                '--gray-color' => '#6c757d',
-                '--heading-color' => '#333333'
-            ];
-            break;
-    }
-    
-    // Önbelleğe alma sorununu çözmek için timestamp ekliyoruz
-    $cacheBuster = time();
-    
-    // CSS stilini oluştur
-    $css = "<!-- Color scheme: $colorScheme (updated: $cacheBuster) -->\n<style>";
-    $css .= "\n:root {";
-    foreach ($variables as $key => $value) {
-        $css .= "\n    $key: $value;";
-    }
-    $css .= "\n}";
-    
-    // Ana içerik alanları için CSS kuralları
-    $css .= "\n\n/* Ana içerik alanı için renk uygulamaları */";
-    $css .= "\n.btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }";
-    $css .= "\n.btn-primary:hover, .btn-primary:focus { background-color: var(--secondary-color); border-color: var(--secondary-color); }";
-    $css .= "\n.text-primary { color: var(--primary-color) !important; }";
-    $css .= "\n.bg-primary { background-color: var(--primary-color) !important; }";
-    $css .= "\n.section-title { color: var(--primary-color); }";
-    $css .= "\n.service-card:hover { border-color: var(--primary-color); }";
-    $css .= "\n.nav-link:hover, .nav-link.active { color: var(--primary-color) !important; }";
-    $css .= "\n.main-content a:not(.btn) { color: var(--primary-color); }";
-    $css .= "\n.main-content a:not(.btn):hover { color: var(--secondary-color); }";
-    $css .= "\n.main-content .card-header { background-color: var(--primary-color); color: white; }";
-    $css .= "\n.main-content .section-heading::after { background-color: var(--primary-color); }";
-    
-    // Header ve menu için CSS kuralları
-    $css .= "\n\n/* Header ve Menü renk kuralları */";
-    $css .= "\n.navbar .nav-link:hover, .navbar .nav-link.active { border-bottom: 2px solid var(--primary-color); }";
-    $css .= "\n.top-bar .social-links a:hover { color: var(--accent-color) !important; }";
-    
-    // Slider için CSS kuralları
-    $css .= "\n\n/* Slider ve butonlar için renk kuralları */";
-    $css .= "\n.carousel-caption .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }";
-    $css .= "\n.carousel-caption .btn-primary:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }";
-    
-    // Ortak sayfa başlığı stili
-    $css .= "\n.page-header {";
-    $css .= "\n    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('" . SITE_URL . "/assets/img/$pageHeaderBg') center center no-repeat;";
-    $css .= "\n    background-size: cover;";
-    $css .= "\n    color: white;";
-    $css .= "\n    padding-top: 3rem;";
-    $css .= "\n    padding-bottom: 3rem;";
-    $css .= "\n    margin-bottom: 3rem;";
-    $css .= "\n    text-align: center;";
-    $css .= "\n    position: relative;";
-    $css .= "\n}";
-    
-    $css .= "\n.page-header::before {";
-    $css .= "\n    content: '';";
-    $css .= "\n    position: absolute;";
-    $css .= "\n    top: 0;";
-    $css .= "\n    left: 0;";
-    $css .= "\n    width: 100%;";
-    $css .= "\n    height: 100%;";
-    $css .= "\n    background-color: var(--primary-color);";
-    $css .= "\n    opacity: 0.2;";
-    $css .= "\n}";
-    
-    $css .= "\n.page-header .container {";
-    $css .= "\n    position: relative;";
-    $css .= "\n    z-index: 1;";
-    $css .= "\n}";
-    
-    // Renk geçişleri için animasyon
-    $css .= "\n/* Renk geçişi animasyonları */";
-    $css .= "\na, button, .btn, .nav-link, .service-card, .card { transition: all 0.3s ease-in-out; }";
-    
-    $css .= "\n</style>";
-    
-    return $css;
 }
 
 /**

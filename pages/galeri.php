@@ -97,12 +97,8 @@ include_once '../includes/header.php';
         <!-- Filtre Butonları -->
         <div class="filter-buttons text-center mb-5">
             <button type="button" class="btn btn-primary active" data-filter="*">Tümü</button>
-            <?php foreach ($categories as $category): ?>
-                <?php $filterClass = strtolower(str_replace(' ', '-', $category)); ?>
-                <button type="button" class="btn btn-outline-primary" data-filter=".<?php echo $filterClass; ?>">
-                    <?php echo $category; ?>
-                </button>
-            <?php endforeach; ?>
+            <button type="button" class="btn btn-outline-primary" data-filter=".resimler">Resimler</button>
+            <button type="button" class="btn btn-outline-primary" data-filter=".videolar">Videolar</button>
         </div>
         
         <!-- Galeri Öğeleri -->
@@ -113,12 +109,19 @@ include_once '../includes/header.php';
                 ?>
                 <div class="col-lg-4 col-md-6 gallery-item <?php echo $categoryClass; ?>">
                     <?php if ($item['type'] == 'image'): ?>
-                        <a href="<?php echo $item['file_path']; ?>" data-lightbox="gallery" data-title="<?php echo $item['title']; ?>">
-                            <img src="<?php echo $item['file_path']; ?>" alt="<?php echo $item['title']; ?>" class="img-fluid">
-                        </a>
+                        <div class="image-container">
+                            <img src="../<?php echo $item['file_path']; ?>" alt="<?php echo $item['title']; ?>" class="img-fluid gallery-image" onclick="openImageModal(this)">
+                        </div>
                     <?php else: ?>
                         <div class="video-container">
-                            <iframe src="<?php echo $item['file_path']; ?>" allowfullscreen></iframe>
+                            <?php if (strpos($item['file_path'], 'youtube.com') !== false || strpos($item['file_path'], 'vimeo.com') !== false): ?>
+                                <iframe src="<?php echo $item['file_path']; ?>" allowfullscreen></iframe>
+                            <?php else: ?>
+                                <video controls class="img-fluid">
+                                    <source src="../<?php echo $item['file_path']; ?>" type="video/mp4">
+                                    Tarayıcınız video etiketini desteklemiyor.
+                                </video>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                     <div class="content">
@@ -131,6 +134,14 @@ include_once '../includes/header.php';
     </div>
 </section>
 
+<!-- Modal -->
+<div id="imageModal" class="image-modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeImageModal()">&times;</span>
+        <img id="expandedImage" class="modal-image">
+    </div>
+</div>
+
 <!-- İletişim CTA -->
 <section class="cta-section bg-primary text-white py-5 text-center">
     <div class="container">
@@ -140,11 +151,7 @@ include_once '../includes/header.php';
     </div>
 </section>
 
-<!-- Lightbox Kütüphanesi (sadece resim görüntüleme için) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css">
-<script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/js/lightbox.min.js"></script>
-
-<!-- Filtre ve Lightbox için JavaScript -->
+<!-- Filtre için JavaScript -->
 <script>
 // Sayfa yüklenir yüklenmez çalışacak script
 (function() {
@@ -190,16 +197,40 @@ include_once '../includes/header.php';
     }
 })();
 
-// Sayfa tamamen yüklenince Lightbox ayarlarını yap
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof lightbox !== 'undefined') {
-        lightbox.option({
-            'resizeDuration': 200,
-            'wrapAround': true,
-            'albumLabel': "Resim %1 / %2"
-        });
+// Resim modal fonksiyonları
+function openImageModal(img) {
+    var modal = document.getElementById("imageModal");
+    var modalImg = document.getElementById("expandedImage");
+    
+    modal.style.display = "flex";
+    modalImg.src = img.src;
+    
+    // Sayfa kaydırmayı engelle
+    document.body.style.overflow = "hidden";
+}
+
+function closeImageModal() {
+    var modal = document.getElementById("imageModal");
+    modal.style.display = "none";
+    
+    // Sayfa kaydırmayı tekrar etkinleştir
+    document.body.style.overflow = "auto";
+}
+
+// ESC tuşuna basıldığında modalı kapat
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Escape") {
+        closeImageModal();
     }
 });
+
+// Modal dışına tıklandığında kapat
+window.onclick = function(event) {
+    var modal = document.getElementById("imageModal");
+    if (event.target == modal) {
+        closeImageModal();
+    }
+}
 </script>
 
 <?php include '../includes/footer.php'; ?>

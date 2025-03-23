@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /index.php
+Allow: /pages/
+Allow: /assets/
+
+# Admin paneline erişim engellendi
+Disallow: /admin/
+Disallow: /includes/
+Disallow: /config.php
+
+# Sitemap lokasyonu
+Sitemap: https://www.your-domain.com/sitemap.xml 

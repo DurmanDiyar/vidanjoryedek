@@ -44,7 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $contactAddress = isset($_POST['contact_address']) ? trim($_POST['contact_address']) : '';
     $colorScheme = isset($_POST['color_scheme']) ? trim($_POST['color_scheme']) : 'blue-green';
     $pageHeaderBg = isset($_POST['page_header_bg']) ? trim($_POST['page_header_bg']) : 'page-header-bg.jpg';
-    $whatsappPhone = isset($_POST['whatsapp_phone']) ? trim($_POST['whatsapp_phone']) : '';
+    $whatsappPhone = isset($_POST['whatsapp_phone']) ? $_POST['whatsapp_phone'] : '';
+    $whatsappPhone = preg_replace('/[^0-9+]/', '', $whatsappPhone); // Sadece sayıları ve + işaretini tut
+    
+    // SEO ayarları
+    $siteDescription = isset($_POST['site_description']) ? trim($_POST['site_description']) : '';
+    $siteKeywords = isset($_POST['site_keywords']) ? trim($_POST['site_keywords']) : '';
     
     // Renk şeması onaylama (color_scheme_confirmed varsa onu kullan)
     if (isset($_POST['color_scheme_confirmed']) && !empty($_POST['color_scheme_confirmed'])) {
@@ -104,7 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'instagram_url' => "ALTER TABLE site_settings ADD COLUMN instagram_url VARCHAR(255) DEFAULT '#'",
                 'linkedin_url' => "ALTER TABLE site_settings ADD COLUMN linkedin_url VARCHAR(255) DEFAULT '#'",
                 'youtube_url' => "ALTER TABLE site_settings ADD COLUMN youtube_url VARCHAR(255) DEFAULT '#'",
-                'whatsapp_phone' => "ALTER TABLE site_settings ADD COLUMN whatsapp_phone VARCHAR(20) DEFAULT ''"
+                'whatsapp_phone' => "ALTER TABLE site_settings ADD COLUMN whatsapp_phone VARCHAR(20) DEFAULT ''",
+                'site_description' => "ALTER TABLE site_settings ADD COLUMN site_description TEXT DEFAULT 'Profesyonel kurumsal hizmetler sunan web sitemize hoş geldiniz.'",
+                'site_keywords' => "ALTER TABLE site_settings ADD COLUMN site_keywords VARCHAR(255) DEFAULT 'kurumsal, hizmetler, profesyonel'"
             ];
             
             foreach ($requiredColumns as $column => $alterQuery) {
@@ -142,7 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     instagram_url = ?,
                     linkedin_url = ?,
                     youtube_url = ?,
-                    whatsapp_phone = ?
+                    whatsapp_phone = ?,
+                    site_description = ?,
+                    site_keywords = ?
                     WHERE id = 1");
                 $result = $stmt->execute([
                     $siteTitle, 
@@ -156,7 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $instagramUrl,
                     $linkedinUrl,
                     $youtubeUrl,
-                    $whatsappPhone
+                    $whatsappPhone,
+                    $siteDescription,
+                    $siteKeywords
                 ]);
             } else {
                 // Yeni ekleme
@@ -172,8 +183,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     instagram_url,
                     linkedin_url,
                     youtube_url,
-                    whatsapp_phone
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    whatsapp_phone,
+                    site_description,
+                    site_keywords
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $result = $stmt->execute([
                     $siteTitle, 
                     $contactPhone, 
@@ -186,7 +199,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $instagramUrl,
                     $linkedinUrl,
                     $youtubeUrl,
-                    $whatsappPhone
+                    $whatsappPhone,
+                    $siteDescription,
+                    $siteKeywords
                 ]);
             }
             
@@ -442,6 +457,35 @@ if (!empty($message)) {
                                 Kullanılmayan platformlar için alanları boş bırakabilirsiniz. Boş bırakılan alanlar sitede gösterilmeyecektir.
                             </small>
                         </div>
+                        
+                        <!-- SEO Ayarları -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-search me-2"></i> SEO Ayarları</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Site Açıklaması -->
+                                <div class="mb-3">
+                                    <label for="site_description" class="form-label">Site Açıklaması <small class="text-muted">(Meta Description - En fazla 160 karakter)</small></label>
+                                    <textarea class="form-control" id="site_description" name="site_description" rows="3" maxlength="160"><?php echo htmlspecialchars($settings['site_description'] ?? ''); ?></textarea>
+                                    <div class="form-text">Bu açıklama arama motorlarında ve sosyal medya paylaşımlarında görünecektir.</div>
+                                </div>
+                                
+                                <!-- Anahtar Kelimeler -->
+                                <div class="mb-3">
+                                    <label for="site_keywords" class="form-label">Anahtar Kelimeler <small class="text-muted">(Meta Keywords - Virgülle ayrılmış)</small></label>
+                                    <input type="text" class="form-control" id="site_keywords" name="site_keywords" value="<?php echo htmlspecialchars($settings['site_keywords'] ?? ''); ?>">
+                                    <div class="form-text">Sitenizi en iyi tanımlayan anahtar kelimeleri virgülle ayırarak yazın (örn: kurumsal, inşaat, tadilat, hizmet).</div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> SEO ayarları sitenizin arama motorlarında daha iyi sıralama almasına yardımcı olur. Her sayfa için ayrıca özelleştirilmiş meta bilgileri otomatik olarak oluşturulacaktır.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /SEO Ayarları -->
+                        
+                        <!-- CSS Renk Şeması Ayarları -->
                         
                         <!-- Submit Button -->
                         <div class="mt-4">

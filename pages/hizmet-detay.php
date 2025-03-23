@@ -4,8 +4,111 @@
  */
 require_once '../config.php';
 
+// Hata raporlamayı etkinleştir
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 // Get service ID from URL
 $service_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Form mesajını saklamak için değişkenler
+$message = '';
+$messageType = '';
+$formValues = [
+    'name' => '',
+    'email' => '',
+    'phone' => '',
+    'message' => ''
+];
+$urgent = false; // $urgent değişkenini varsayılan olarak false şeklinde tanımla
+
+// Form gönderildi mi kontrol et ve işle
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Form verilerini al
+    $formValues['name'] = isset($_POST['name']) ? trim($_POST['name']) : '';
+    $formValues['email'] = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $formValues['phone'] = isset($_POST['phone']) ? trim($_POST['phone']) : '';
+    $formValues['message'] = isset($_POST['message']) ? trim($_POST['message']) : '';
+    $urgent = isset($_POST['urgent']) ? 1 : 0;
+    $errors = [];
+    
+    // Form doğrulama
+    if (empty($formValues['name'])) {
+        $errors[] = 'Ad Soyad alanı gereklidir';
+    }
+    
+    if (empty($formValues['email'])) {
+        $errors[] = 'E-posta alanı gereklidir';
+    } elseif (!filter_var($formValues['email'], FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Geçerli bir e-posta adresi giriniz';
+    }
+    
+    if (empty($formValues['message'])) {
+        $errors[] = 'Mesaj alanı gereklidir';
+    }
+    
+    // Hata yoksa mesajı kaydet
+    if (empty($errors)) {
+        try {
+            // Veritabanı bağlantısı
+            $db = getDbConnection();
+            
+            // Mesaj içeriğine hizmet bilgisi ekle
+            $messageContent = $formValues['message'];
+            
+            // Get service details from database
+            $stmt = $db->prepare("SELECT name FROM services WHERE id = ?");
+            $stmt->execute([$service_id]);
+            $service = $stmt->fetch();
+            
+            if ($service) {
+                $messageContent = "Hizmet: " . $service['name'] . " (ID: " . $service_id . ")\n\n" . $messageContent;
+            }
+            
+            if ($urgent) {
+                $messageContent = "[ACİL TALEP]\n" . $messageContent;
+            }
+            
+            $stmt = $db->prepare("INSERT INTO contact_messages (name, email, phone, message) VALUES (?, ?, ?, ?)");
+            $result = $stmt->execute([
+                $formValues['name'], 
+                $formValues['email'], 
+                $formValues['phone'], 
+                $messageContent
+            ]);
+            
+            if ($result) {
+                // Form değerlerini sıfırla
+                $formValues = [
+                    'name' => '',
+                    'email' => '',
+                    'phone' => '',
+                    'message' => ''
+                ];
+                
+                // POST'tan sonra yeniden yükleme sorununu önlemek için yönlendirme yap
+                header("Location: hizmet-detay.php?id=" . $service_id . "&success=1");
+                exit;
+                
+            } else {
+                $message = 'Mesajınız gönderilirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.';
+                $messageType = 'danger';
+            }
+        } catch (PDOException $e) {
+            $message = 'Veritabanı hatası: ' . $e->getMessage();
+            $messageType = 'danger';
+        }
+    } else {
+        $message = implode('<br>', $errors);
+        $messageType = 'danger';
+    }
+}
+
+// URL parametresinden başarı mesajını kontrol et
+if (isset($_GET['success']) && $_GET['success'] == 1) {
+    $message = 'Mesajınız başarıyla gönderildi. En kısa sürede sizinle iletişime geçeceğiz.';
+    $messageType = 'success';
+}
 
 // Get service details from database
 try {
@@ -202,22 +305,31 @@ include_once '../includes/header.php';
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-body">
                             <h3 class="card-title mb-4">Bilgi Talep Formu</h3>
-                            <form action="#" method="post">
+                            
+                            <?php if (!empty($message)): ?>
+                                <div class="alert alert-<?php echo $messageType; ?> mb-4"><?php echo $message; ?></div>
+                            <?php endif; ?>
+                            
+                            <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>?id=<?php echo $service_id; ?>" method="post">
                                 <div class="mb-3">
                                     <label for="name" class="form-label">Adınız Soyadınız *</label>
-                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <input type="text" class="form-control" id="name" name="name" required value="<?php echo htmlspecialchars($formValues['name']); ?>">
                                 </div>
                                 <div class="mb-3">
                                     <label for="email" class="form-label">E-posta Adresiniz *</label>
-                                    <input type="email" class="form-control" id="email" name="email" required>
+                                    <input type="email" class="form-control" id="email" name="email" required value="<?php echo htmlspecialchars($formValues['email']); ?>">
                                 </div>
                                 <div class="mb-3">
                                     <label for="phone" class="form-label">Telefon Numaranız</label>
-                                    <input type="tel" class="form-control" id="phone" name="phone">
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($formValues['phone']); ?>">
                                 </div>
                                 <div class="mb-3">
                                     <label for="message" class="form-label">Mesajınız *</label>
-                                    <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                                    <textarea class="form-control" id="message" name="message" rows="4" required placeholder="<?php echo $service['name']; ?> hizmeti hakkında bilgi almak istiyorum."><?php echo htmlspecialchars($formValues['message']); ?></textarea>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="urgentCheck" name="urgent" <?php echo isset($urgent) && $urgent ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="urgentCheck">Acil durum! En kısa sürede ulaşılsın.</label>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">Gönder</button>
                             </form>

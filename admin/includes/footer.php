@@ -98,5 +98,37 @@
                 });
             });
         </script>
+        
+        <!-- Önbellek temizleme ve renk şeması güncellemesi için yardımcı script -->
+        <script>
+            // Sayfa yüklendiğinde
+            document.addEventListener('DOMContentLoaded', function() {
+                // URL'de güncellenmiş parametre var mı kontrol et
+                if (new URLSearchParams(window.location.search).has('updated')) {
+                    console.log('Güncellenmiş içerik algılandı, tarayıcı önbelleğini temizleme...');
+                    
+                    // localStorage'a zaman damgası ekle
+                    localStorage.setItem('lastUpdate', Date.now());
+                    
+                    // Service Worker varsa güncelle
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                            for (let registration of registrations) {
+                                registration.update();
+                            }
+                        });
+                    }
+                    
+                    // Önbellek silme tarayıcı API'si varsa kullan
+                    if ('caches' in window) {
+                        caches.keys().then(function(names) {
+                            for (let name of names) {
+                                caches.delete(name);
+                            }
+                        });
+                    }
+                }
+            });
+        </script>
     </body>
 </html>

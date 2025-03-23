@@ -63,6 +63,10 @@ $instagramUrl = isset($_POST['instagram_url']) ? trim($_POST['instagram_url']) :
 $linkedinUrl = isset($_POST['linkedin_url']) ? trim($_POST['linkedin_url']) : '';
 $youtubeUrl = isset($_POST['youtube_url']) ? trim($_POST['youtube_url']) : '';
 
+// SEO ayarları
+$siteDescription = isset($_POST['site_description']) ? trim($_POST['site_description']) : '';
+$siteKeywords = isset($_POST['site_keywords']) ? trim($_POST['site_keywords']) : '';
+
 // Boş URL'leri boş string olarak bırak
 // $facebookUrl = empty($facebookUrl) ? '#' : $facebookUrl;
 // $twitterUrl = empty($twitterUrl) ? '#' : $twitterUrl;
@@ -136,7 +140,9 @@ try {
         'instagram_url' => "ALTER TABLE site_settings ADD COLUMN instagram_url VARCHAR(255) DEFAULT '#'",
         'linkedin_url' => "ALTER TABLE site_settings ADD COLUMN linkedin_url VARCHAR(255) DEFAULT '#'",
         'youtube_url' => "ALTER TABLE site_settings ADD COLUMN youtube_url VARCHAR(255) DEFAULT '#'",
-        'whatsapp_phone' => "ALTER TABLE site_settings ADD COLUMN whatsapp_phone VARCHAR(20) DEFAULT ''"
+        'whatsapp_phone' => "ALTER TABLE site_settings ADD COLUMN whatsapp_phone VARCHAR(20) DEFAULT ''",
+        'site_description' => "ALTER TABLE site_settings ADD COLUMN site_description TEXT",
+        'site_keywords' => "ALTER TABLE site_settings ADD COLUMN site_keywords TEXT"
     ];
     
     foreach ($requiredColumns as $column => $alterQuery) {
@@ -175,7 +181,9 @@ try {
             instagram_url = ?,
             linkedin_url = ?,
             youtube_url = ?,
-            whatsapp_phone = ?
+            whatsapp_phone = ?,
+            site_description = ?,
+            site_keywords = ?
             WHERE id = 1");
         $result = $stmt->execute([
             $siteTitle, 
@@ -189,7 +197,9 @@ try {
             $instagramUrl,
             $linkedinUrl,
             $youtubeUrl,
-            $whatsappPhone
+            $whatsappPhone,
+            $siteDescription,
+            $siteKeywords
         ]);
     } else {
         // Yeni ekleme
@@ -205,8 +215,10 @@ try {
             instagram_url,
             linkedin_url,
             youtube_url,
-            whatsapp_phone
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            whatsapp_phone,
+            site_description,
+            site_keywords
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $result = $stmt->execute([
             $siteTitle, 
             $contactPhone, 
@@ -219,7 +231,9 @@ try {
             $instagramUrl,
             $linkedinUrl,
             $youtubeUrl,
-            $whatsappPhone
+            $whatsappPhone,
+            $siteDescription,
+            $siteKeywords
         ]);
     }
     

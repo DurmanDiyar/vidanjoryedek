@@ -47,8 +47,8 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    background-color: var(--dark-color);
-    transition: width var(--transition-speed) ease;
+    background-color: var(--primary-color) !important;
+    transition: width var(--transition-speed) ease, background-color 0.3s ease-in-out;
     z-index: 1000;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
@@ -183,12 +183,13 @@ body {
 }
 
 .card-header {
-    background-color: var(--secondary-color);
-    color: white;
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
     border-radius: 8px 8px 0 0 !important;
     padding: 15px 20px;
     font-weight: 500;
     border-bottom: none;
+    transition: background-color 0.3s ease-in-out;
 }
 
 .card-body {
@@ -226,13 +227,14 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    transition: background-color 0.3s ease-in-out;
 }
 
 .btn-primary:hover, .btn-primary:focus {
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(26, 95, 122, 0.3);
 }
@@ -443,4 +445,44 @@ body {
     .no-print {
         display: none !important;
     }
+}
+
+/* Admin panel için sidebar ve menü stilleri */
+.admin-sidebar .nav-link span {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline-block !important;
+    margin-left: 0.75rem;
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+.admin-sidebar .nav-link:hover span,
+.admin-sidebar .nav-link.active span {
+    color: #fff !important;
+}
+
+/* Admin panel renk şeması düzenlemeleri */
+.card-header {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.btn-primary:hover, 
+.btn-primary:focus {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* Admin sidebar renk şeması uyumu */
+.admin-sidebar {
+    background-color: var(--primary-color) !important;
+    transition: background-color 0.3s ease-in-out;
 } 

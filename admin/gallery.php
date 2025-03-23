@@ -60,6 +60,10 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
             
             $message = 'Galeri öğesi başarıyla silindi.';
             $messageType = 'success';
+            
+            // Başarılı silme işleminden sonra yönlendirme yap
+            header("Location: gallery.php?deleted=1");
+            exit;
         } else {
             $message = 'Galeri öğesi silinirken bir hata oluştu.';
             $messageType = 'danger';
@@ -85,12 +89,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
         $allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        $allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+        $allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/mpeg'];
         $allowedTypes = array_merge($allowedImageTypes, $allowedVideoTypes);
         $maxFileSize = 10 * 1024 * 1024; // 10MB
         
-        if (!in_array($_FILES['file']['type'], $allowedTypes)) {
-            $uploadError = 'Desteklenmeyen dosya formatı. Lütfen JPEG, PNG, GIF, MP4, WEBM veya OGG formatında bir dosya seçin.';
+        $fileType = $_FILES['file']['type'];
+        $fileExt = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
+        
+        // MIME tipi kontrolünün yanında dosya uzantısına da bakıyoruz
+        $isVideo = in_array($fileType, $allowedVideoTypes) || 
+                   in_array($fileExt, ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'mpg', 'mpeg']);
+        $isImage = in_array($fileType, $allowedImageTypes) || 
+                   in_array($fileExt, ['jpg', 'jpeg', 'png', 'gif']);
+        
+        if (!$isVideo && !$isImage) {
+            $uploadError = 'Desteklenmeyen dosya formatı. Lütfen JPEG, PNG, GIF, MP4, WEBM, OGG formatında bir dosya seçin.';
         } elseif ($_FILES['file']['size'] > $maxFileSize) {
             $uploadError = 'Dosya boyutu 10MB\'dan büyük olamaz.';
         } else {
@@ -100,10 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFilePath)) {
                 $filePath = 'uploads/gallery/' . $fileName;
                 
-                // Dosya türünü belirle
-                if (in_array($_FILES['file']['type'], $allowedImageTypes)) {
+                // Dosya türünü kontrol et (eğer kullanıcı manuel değiştirirse override edilsin diye)
+                if ($isImage) {
                     $type = 'image';
-                } else {
+                } else if ($isVideo) {
                     $type = 'video';
                 }
             } else {
@@ -136,13 +149,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $result = $stmt->execute([$title, $filePath, $type, $category, $description, $galleryId]);
                 } else {
                     // Dosya olmadan güncelleme
-                    $stmt = $db->prepare("UPDATE gallery SET title = ?, category = ?, description = ? WHERE id = ?");
-                    $result = $stmt->execute([$title, $category, $description, $galleryId]);
+                    $stmt = $db->prepare("UPDATE gallery SET title = ?, type = ?, category = ?, description = ? WHERE id = ?");
+                    $result = $stmt->execute([$title, $type, $category, $description, $galleryId]);
                 }
                 
                 if ($result) {
                     $message = 'Galeri öğesi başarıyla güncellendi.';
                     $messageType = 'success';
+                    
+                    // Form yeniden gönderimini önlemek için yönlendirme yap
+                    header("Location: gallery.php?updated=1");
+                    exit;
                 } else {
                     $message = 'Galeri öğesi güncellenirken bir hata oluştu.';
                     $messageType = 'danger';
@@ -159,6 +176,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($result) {
                         $message = 'Galeri öğesi başarıyla eklendi.';
                         $messageType = 'success';
+                        
+                        // Form yeniden gönderimini önlemek için yönlendirme yap
+                        header("Location: gallery.php?success=1");
+                        exit;
                     } else {
                         $message = 'Galeri öğesi eklenirken bir hata oluştu.';
                         $messageType = 'danger';
@@ -205,6 +226,22 @@ try {
     $messageType = 'danger';
 }
 
+// URL parametrelerine göre mesaj gösterme
+if (isset($_GET['success']) && $_GET['success'] == 1) {
+    $message = 'Galeri öğesi başarıyla eklendi.';
+    $messageType = 'success';
+}
+
+if (isset($_GET['updated']) && $_GET['updated'] == 1) {
+    $message = 'Galeri öğesi başarıyla güncellendi.';
+    $messageType = 'success';
+}
+
+if (isset($_GET['deleted']) && $_GET['deleted'] == 1) {
+    $message = 'Galeri öğesi başarıyla silindi.';
+    $messageType = 'success';
+}
+
 // Sayfa başlığı
 $pageTitle = 'Galeri Yönetimi';
 
@@ -245,14 +282,19 @@ include 'includes/header.php';
                         </div>
                         
                         <div class="mb-3">
+                            <label for="type" class="form-label">Dosya Türü</label>
+                            <select class="form-select" id="type" name="type" onchange="updateCategory()">
+                                <option value="image" <?php echo ($editGallery && $editGallery['type'] == 'image') ? 'selected' : ''; ?>>Resim</option>
+                                <option value="video" <?php echo ($editGallery && $editGallery['type'] == 'video') ? 'selected' : ''; ?>>Video</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
                             <label for="category" class="form-label">Kategori</label>
-                            <input type="text" class="form-control" id="category" name="category" list="category-list" value="<?php echo $editGallery ? htmlspecialchars($editGallery['category']) : ''; ?>">
-                            <datalist id="category-list">
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo htmlspecialchars($category); ?>">
-                                <?php endforeach; ?>
-                            </datalist>
-                            <small class="form-text text-muted">Mevcut bir kategori seçin veya yeni bir kategori girin.</small>
+                            <select class="form-select" id="category" name="category">
+                                <option value="Resimler" <?php echo ($editGallery && $editGallery['category'] == 'Resimler') ? 'selected' : ''; ?>>Resimler</option>
+                                <option value="Videolar" <?php echo ($editGallery && $editGallery['category'] == 'Videolar') ? 'selected' : ''; ?>>Videolar</option>
+                            </select>
                         </div>
                         
                         <div class="mb-3">
@@ -262,8 +304,8 @@ include 'includes/header.php';
                         
                         <div class="mb-3">
                             <label for="file" class="form-label">Dosya (Resim/Video)</label>
-                            <input type="file" class="form-control" id="file" name="file" accept="image/*,video/*" <?php echo $editGallery ? '' : 'required'; ?>>
-                            <small class="form-text text-muted">Desteklenen formatlar: JPEG, PNG, GIF, MP4, WEBM, OGG. Maksimum dosya boyutu: 10MB</small>
+                            <input type="file" class="form-control" id="file" name="file" accept="image/*,video/*,.mp4,.webm,.ogg,.mov,.avi" <?php echo $editGallery ? '' : 'required'; ?>>
+                            <small class="form-text text-muted">Desteklenen formatlar: JPEG, PNG, GIF, MP4, WEBM, OGG, MOV, AVI. Maksimum dosya boyutu: 10MB.<br>Önerilen resim boyutu: minimum 800x600 piksel. Resimler orijinal boyutunda yüklenir.</small>
                             
                             <?php if ($editGallery && !empty($editGallery['file_path'])): ?>
                                 <div class="mt-2">
@@ -374,4 +416,69 @@ include 'includes/header.php';
 <?php
 // Footer'ı dahil et
 include 'includes/footer.php';
-?> 
+?>
+
+<script>
+// Dosya türüne göre kategoriyi güncelle
+function updateCategory() {
+    const typeSelect = document.getElementById('type');
+    const categorySelect = document.getElementById('category');
+    
+    if (typeSelect && categorySelect) {
+        const selectedType = typeSelect.value;
+        
+        if (selectedType === 'image') {
+            categorySelect.value = 'Resimler';
+        } else if (selectedType === 'video') {
+            categorySelect.value = 'Videolar';
+        }
+    }
+}
+
+// Dosya seçildiğinde kontrol et ve türe göre seçimler yap
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('file');
+    const typeSelect = document.getElementById('type');
+    
+    if (fileInput && typeSelect) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                const fileName = this.files[0].name.toLowerCase();
+                const fileType = this.files[0].type;
+                
+                // Dosya uzantısını al
+                const extension = fileName.split('.').pop();
+                
+                // Video formatlarını kontrol et
+                const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'mpeg', 'mpg'];
+                
+                if (fileType.startsWith('video/') || videoExtensions.includes(extension)) {
+                    typeSelect.value = 'video';
+                } else {
+                    typeSelect.value = 'image';
+                }
+                
+                // Kategoriyi güncelle
+                updateCategory();
+            }
+        });
+    }
+    
+    // Form gönderildiğinde dosya boş kontrolü
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('file');
+            const galleryId = document.querySelector('input[name="gallery_id"]');
+            
+            // Yeni ekleme ise (edit değilse) ve dosya seçilmemişse
+            if (!galleryId && fileInput && fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Lütfen bir dosya seçin.');
+            }
+        });
+    }
+});
+</script>
+</body>
+</html> 

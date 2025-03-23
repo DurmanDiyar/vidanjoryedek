@@ -24,6 +24,10 @@
                         <?php if (!empty($settings['linkedin_url'])): ?>
                             <a href="<?php echo htmlspecialchars($settings['linkedin_url']); ?>" target="_blank"><i class="fab fa-linkedin-in"></i></a>
                         <?php endif; ?>
+                        
+                        <?php if (!empty($settings['youtube_url'])): ?>
+                            <a href="<?php echo htmlspecialchars($settings['youtube_url']); ?>" target="_blank"><i class="fab fa-youtube"></i></a>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -85,7 +89,7 @@
     </footer>
 
     <!-- Floating İletişim Butonları -->
-    <div class="floating-buttons">
+    <div class="floating-buttons visible">
         <?php if (!empty($settings['contact_phone'])): ?>
         <a href="tel:<?php echo htmlspecialchars($settings['contact_phone']); ?>" class="floating-button phone-button" title="Bizi Arayın">
             <i class="fas fa-phone"></i>
@@ -97,8 +101,7 @@
             <i class="fab fa-whatsapp"></i>
         </a>
         <?php else: ?>
-        <!-- Varsayılan WhatsApp numarası -->
-        <a href="https://wa.me/905551234567" class="floating-button whatsapp-button" target="_blank" title="WhatsApp ile Yazın">
+        <a href="https://wa.me/905555555555" class="floating-button whatsapp-button" target="_blank" title="WhatsApp ile Yazın">
             <i class="fab fa-whatsapp"></i>
         </a>
         <?php endif; ?>

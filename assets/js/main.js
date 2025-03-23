@@ -83,6 +83,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sayfa başına dön butonu
     const backToTopButton = document.querySelector('.back-to-top');
     if (backToTopButton) {
+        // Sayfa yüklendiğinde butonun durumunu kontrol et
+        if (window.pageYOffset > 300) {
+            backToTopButton.classList.add('visible');
+        }
+        
         // Sayfa kaydırıldığında butonu göster/gizle
         window.addEventListener('scroll', function() {
             if (window.pageYOffset > 300) {
@@ -106,9 +111,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const floatingButtons = document.querySelector('.floating-buttons');
     if (floatingButtons) {
         // Sayfa yüklendiğinde floating butonları göster
+        floatingButtons.classList.add('visible');
+        
+        // Ekstra kontrol için timeout ekle
         setTimeout(function() {
             floatingButtons.classList.add('visible');
-        }, 1000);
+        }, 500);
     }
     
     // Form validation

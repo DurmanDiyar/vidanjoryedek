@@ -5,9 +5,17 @@ CREATE TABLE IF NOT EXISTS `site_settings` (
   `contact_phone` varchar(20) DEFAULT NULL,
   `contact_email` varchar(100) DEFAULT NULL,
   `contact_address` varchar(255) DEFAULT NULL,
+  `color_scheme` varchar(50) DEFAULT 'blue-green',
+  `page_header_bg` varchar(100) DEFAULT 'page-header-bg.jpg',
+  `facebook_url` varchar(255) DEFAULT NULL,
+  `twitter_url` varchar(255) DEFAULT NULL,
+  `instagram_url` varchar(255) DEFAULT NULL,
+  `linkedin_url` varchar(255) DEFAULT NULL,
+  `youtube_url` varchar(255) DEFAULT NULL,
+  `whatsapp_phone` varchar(20) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Insert default site settings if not exists
 INSERT INTO `site_settings` (`id`, `site_title`, `contact_phone`, `contact_email`, `contact_address`)
